@@ -10,9 +10,9 @@ PORT=8181
 REPO_URL="https://github.com/a-salemi/3xui-inbound-manager.git"
 
 echo ""
-echo "╔════════════════════════════════════════════╗"
-echo "║   3X-UI Inbound Manager — Installer        ║"
-╚════════════════════════════════════════════╝"
+echo "=============================================="
+echo "    3X-UI Inbound Manager — Installer"
+echo "=============================================="
 echo ""
 
 # ─── 0. Fix DNS if needed ─────────────────────────────────
@@ -32,27 +32,18 @@ echo "  ✓ System dependencies ready"
 echo "[2/5] Setting up application directory..."
 systemctl stop ${SERVICE_NAME} 2>/dev/null || true
 
-if [ -f "run.py" ] && [ -f "requirements.txt" ]; then
-    mkdir -p "$APP_DIR"
-    cp -r . "$APP_DIR/"
-else
-    rm -rf "$APP_DIR"
-    git clone "$REPO_URL" "$APP_DIR"
-fi
+rm -rf "$APP_DIR"
+git clone "$REPO_URL" "$APP_DIR"
 
 cd "$APP_DIR"
-echo "  ✓ Files ready at $APP_DIR"
+echo "  ✓ Files downloaded to $APP_DIR"
 
 # ─── 3. Virtual Environment & Dependencies ────────────────
-echo "[3/5] Installing Python packages..."
-rm -rf venv
+echo "[3/5] Setting up Python environment..."
 python3 -m venv venv
 source venv/bin/activate
 
-# Upgrade pip (ignore failure if offline)
 pip install --no-cache-dir --upgrade pip 2>/dev/null || true
-
-# Install requirements with retry
 pip install --no-cache-dir -r requirements.txt
 echo "  ✓ Dependencies installed successfully"
 
@@ -91,16 +82,14 @@ fi
 # ─── Done ─────────────────────────────────────────────────
 SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
-echo "╔════════════════════════════════════════════╗"
-echo "║   ✅ Installation Complete!                 ║"
-echo "╠════════════════════════════════════════════╣"
-echo "║                                            ║"
-echo "║  URL:  http://${SERVER_IP}:${PORT}          "
-echo "║  User: admin                               ║"
-echo "║  Pass: asdf1234!!@@                         ║"
-echo "║                                            ║"
-echo "║  Check status: systemctl status ${SERVICE_NAME} "
-echo "║  View logs:    journalctl -u ${SERVICE_NAME} -f "
-echo "║                                            ║"
-echo "╚════════════════════════════════════════════╝"
+echo "=============================================="
+echo "   ✅ Installation Complete!"
+echo "=============================================="
+echo "  URL:  http://${SERVER_IP}:${PORT}"
+echo "  User: admin"
+echo "  Pass: asdf1234!!@@"
+echo ""
+echo "  Check status: systemctl status ${SERVICE_NAME}"
+echo "  View logs:    journalctl -u ${SERVICE_NAME} -f"
+echo "=============================================="
 echo ""
