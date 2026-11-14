@@ -1,35 +1,51 @@
 # ⚡ 3X-UI Inbound Manager
 
-A minimal, modern web dashboard to schedule and automate enabling/disabling 3X-UI inbounds via REST API (Bearer Token).
-
-## 🚀 One-Line Fast Install (Ubuntu 22.04+)
-
-Replace `YOUR_USERNAME` with your GitHub username:
-
-```bash
-bash <(curl -Ls https://raw.githubusercontent.com/YOUR_USERNAME/3xui-inbound-manager/main/install.sh)
-```
-
-*(Or simply clone and run `install.sh`)*
-
-```bash
-git clone https://github.com/YOUR_USERNAME/3xui-inbound-manager.git
-cd 3xui-inbound-manager
-chmod +x install.sh
-sudo ./install.sh
-```
+یک پنل تحت وب مدرن، دارک و مینیمال برای زمان‌بندی هوشمند روشن و خاموش شدن اینباندهای پنل 3X-UI (ثنایی) از طریق REST API و توکن Bearer بدون نیاز به دسترسی مستقیم به دیتابیس.
 
 ---
 
-## 🔑 Default Credentials
-- **Port:** `8181` (accessible at `http://YOUR_SERVER_IP:8181`)
-- **Username:** `admin`
-- **Password:** `asdf1234!!@@`
-*(You can change credentials in `app/main.py`)*
+## 🚀 نصب سریع روی سرور اوبونتو (Ubuntu 22+)
 
-## 🛠 Features
-- 🔌 Multi-panel support (connect multiple 3X-UI instances)
-- ⏰ Automated inbound schedule (e.g. Nightly service 02:00 to 07:00)
-- 🌐 Native API token auth (no direct DB access required)
-- ⚡ Manual one-click instant toggle (ON / OFF)
-- 🎨 Sleek Dark / Minimal UI
+کافیه دستور تک‌خطی زیر رو در ترمینال سرور اجرا کنید:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/a-salemi/3xui-inbound-manager/main/install.sh?v=$(date +%s))
+```
+
+> **نکته هوشمند اسکریپت:** این نصاب در صورت بروز کندی یا اختلال در دانلود پکیج‌های پایتون از سرورهای بین‌المللی، به صورت خودکار و هوشمند به **میرورهای پرسرعت ایرانی (Runflare و Liara)** سوییچ می‌کند!
+
+---
+
+## 🔑 اطلاعات ورود پیش‌فرض
+
+- **پورت وب:** `8181` (قابل دسترسی از طریق `http://YOUR_SERVER_IP:8181`)
+- **نام کاربری:** `admin`
+- **رمز عبور:** `asdf1234!!@@`
+
+*(تمامی این مقادیر از داخل خود پنل در تب **تنظیمات پنل** قابل تغییر هستند)*
+
+---
+
+## ✨ امکانات و قابلیت‌ها
+
+- 🖥 **مدیریت چند پنل:** امکان اتصال چندین پنل 3X-UI مختلف با توکن API
+- ⏰ **زمان‌بندی هوشمند:** تعیین ساعت روشن شدن و خاموش شدن اینباندها (مناسب سرویس‌های شبانه مثل ۲ تا ۷ صبح)
+- ⚙️ **تنظیمات داخلی:** امکان تغییر نام کاربری، رمز عبور و پورت وب پنل مستقیم از محیط گرافیکی
+- ▶️ **کنترل دستی فوری:** دکمه‌های روشن/خاموش لحظه‌ای برای تست و فعال‌سازی فوری
+- 📋 **ثبت رویدادها (Logs):** مشاهده تمام فعالیت‌ها و لاگ‌های زمان‌بندی
+- 🎨 **طراحی Dark & Minimal:** رابط کاربری مدرن، راست‌چین و هماهنگ با موبایل و دسکتاپ
+
+---
+
+## 🛠 دستورات کاربردی سرویس
+
+```bash
+# مشاهده وضعیت سرویس
+systemctl status xui-manager
+
+# ری‌استارت سرویس (مثلاً پس از تغییر پورت)
+systemctl restart xui-manager
+
+# مشاهده لاگ‌های زنده
+journalctl -u xui-manager -f
+```

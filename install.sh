@@ -6,7 +6,6 @@ set -e
 
 APP_DIR="/opt/xui-manager"
 SERVICE_NAME="xui-manager"
-PORT=8181
 REPO_URL="https://github.com/a-salemi/3xui-inbound-manager.git"
 
 echo ""
@@ -32,19 +31,33 @@ echo "  ✓ System dependencies ready"
 echo "[2/5] Setting up application directory..."
 systemctl stop ${SERVICE_NAME} 2>/dev/null || true
 
-rm -rf "$APP_DIR"
-git clone "$REPO_URL" "$APP_DIR"
-
-cd "$APP_DIR"
-echo "  ✓ Files downloaded to $APP_DIR"
+# If we are not already inside /opt/xui-manager, clone or update it
+CURRENT_DIR=$(pwd)
+if [ "$CURRENT_DIR" != "$APP_DIR" ]; then
+    rm -rf "$APP_DIR"
+    git clone "$REPO_URL" "$APP_DIR"
+    cd "$APP_DIR"
+else
+    git fetch --all 2>/dev/null || true
+    git reset --hard origin/main 2>/dev/null || true
+fi
+echo "  ✓ Project files ready at $APP_DIR"
 
 # ─── 3. Virtual Environment & Dependencies ────────────────
-echo "[3/5] Setting up Python environment..."
+echo "[3/5] Setting up Python virtual environment..."
+rm -rf venv
 python3 -m venv venv
 source venv/bin/activate
 
-pip install --no-cache-dir --upgrade pip 2>/dev/null || true
-pip install --no-cache-dir -r requirements.txt
+echo "  Installing dependencies..."
+# Try global PyPI first, fallback to Runflare, then Liara
+if ! pip install --default-timeout=60 --no-cache-dir -r requirements.txt; then
+    echo "  ⚠ Global PyPI mirror timed out, switching to Iranian mirror (Runflare)..."
+    if ! pip install --default-timeout=120 --trusted-host mirror-pypi.runflare.com -i https://mirror-pypi.runflare.com/simple/ -r requirements.txt; then
+        echo "  ⚠ Runflare timed out, switching to Liara mirror..."
+        pip install --default-timeout=120 -i https://package-mirror.liara.ir/repository/pypi/ -r requirements.txt
+    fi
+fi
 echo "  ✓ Dependencies installed successfully"
 
 # ─── 4. Create systemd Service ────────────────────────────
@@ -74,6 +87,7 @@ echo "  ✓ Service started and enabled at boot"
 
 # ─── 5. Firewall ──────────────────────────────────────────
 echo "[5/5] Checking firewall..."
+PORT=$(python3 -c "import json; print(json.load(open('app/data/settings.json'))['port'])" 2>/dev/null || echo "8181")
 if command -v ufw &> /dev/null; then
     ufw allow ${PORT}/tcp > /dev/null 2>&1 || true
     echo "  ✓ Port ${PORT} allowed in UFW"
@@ -89,7 +103,7 @@ echo "  URL:  http://${SERVER_IP}:${PORT}"
 echo "  User: admin"
 echo "  Pass: asdf1234!!@@"
 echo ""
-echo "  Check status: systemctl status ${SERVICE_NAME}"
-echo "  View logs:    journalctl -u ${SERVICE_NAME} -f"
+echo "  Status: systemctl status ${SERVICE_NAME}"
+echo "  Logs:   journalctl -u ${SERVICE_NAME} -f"
 echo "=============================================="
 echo ""

@@ -7,7 +7,7 @@ class PanelConfig(BaseModel):
     name: str
     url: str  # e.g. http://1.2.3.4:2053
     token: str
-    path_prefix: str = "/panel"  # usually /panel
+    path_prefix: str = "/panel"
 
 
 class ScheduleEntry(BaseModel):
@@ -40,3 +40,9 @@ class ScheduleEntryCreate(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class SettingsUpdate(BaseModel):
+    username: str
+    password: Optional[str] = None
+    port: int = 8181

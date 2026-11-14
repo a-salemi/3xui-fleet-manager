@@ -5,19 +5,16 @@ from fastapi import FastAPI, Request, HTTPException, Depends, Form, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.security import HTTPBearer
 
 from app import storage, scheduler as sched
-from app.models import PanelConfigCreate, ScheduleEntryCreate, PanelConfig, ScheduleEntry, LoginRequest
+from app.config import load_settings, save_settings
+from app.models import (
+    PanelConfigCreate, ScheduleEntryCreate, PanelConfig,
+    ScheduleEntry, SettingsUpdate
+)
 from app.xui_client import XUIClient
 
-# ─── Auth ──────────────────────────────────────────────────────────────────────
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "asdf1234!!@@"
-
-# Simple in-memory session tokens (fine for single-user panel)
 _sessions: set[str] = set()
-
 logger = logging.getLogger("app")
 
 
@@ -35,7 +32,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 
-# ─── Session helpers ───────────────────────────────────────────────────────────
+# ─── Auth Helpers ─────────────────────────────────────────────────────────────
 
 def get_session_token(request: Request) -> str | None:
     return request.cookies.get("session")
@@ -65,13 +62,14 @@ async def login_page(request: Request):
 
 @app.post("/login")
 async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+    conf = load_settings()
+    if username == conf.get("username") and password == conf.get("password"):
         token = str(uuid.uuid4())
         _sessions.add(token)
         response = RedirectResponse("/dashboard", status_code=302)
         response.set_cookie("session", token, httponly=True, samesite="lax", max_age=86400 * 7)
         return response
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+    return templates.TemplateResponse("login.html", {"request": request, "error": "نام کاربری یا رمز عبور اشتباه است."})
 
 
 @app.get("/logout")
@@ -104,12 +102,11 @@ async def api_list_panels(_=Depends(require_auth)):
 @app.post("/api/panels")
 async def api_add_panel(data: PanelConfigCreate, _=Depends(require_auth)):
     panel = PanelConfig(id=str(uuid.uuid4()), **data.model_dump())
-    # Verify connection
     client = XUIClient(panel.url, panel.token, panel.path_prefix)
     try:
         await client.test_connection()
     except Exception as e:
-        raise HTTPException(400, detail=f"Cannot connect to panel: {e}")
+        raise HTTPException(400, detail=f"عدم امکان اتصال به پنل: {e}")
     storage.save_panel(panel)
     return panel.model_dump()
 
@@ -117,8 +114,7 @@ async def api_add_panel(data: PanelConfigCreate, _=Depends(require_auth)):
 @app.delete("/api/panels/{panel_id}")
 async def api_delete_panel(panel_id: str, _=Depends(require_auth)):
     if not storage.delete_panel(panel_id):
-        raise HTTPException(404, "Panel not found")
-    # Reload schedules (remove orphaned)
+        raise HTTPException(404, "پنل پیدا نشد")
     sched.reload_all_schedules()
     return {"ok": True}
 
@@ -127,11 +123,19 @@ async def api_delete_panel(panel_id: str, _=Depends(require_auth)):
 async def api_get_inbounds(panel_id: str, _=Depends(require_auth)):
     panel = storage.get_panel(panel_id)
     if not panel:
-        raise HTTPException(404, "Panel not found")
+        raise HTTPException(404, "پنل پیدا نشد")
     client = XUIClient(panel.url, panel.token, panel.path_prefix)
     try:
         inbounds = await client.get_inbounds()
-        return [{"id": i["id"], "remark": i.get("remark", f"Inbound {i['id']}"), "enable": i.get("enable", True), "port": i.get("port")} for i in inbounds]
+        return [
+            {
+                "id": i["id"],
+                "remark": i.get("remark", f"Inbound {i['id']}"),
+                "enable": i.get("enable", True),
+                "port": i.get("port")
+            }
+            for i in inbounds
+        ]
     except Exception as e:
         raise HTTPException(502, detail=str(e))
 
@@ -155,7 +159,7 @@ async def api_add_schedule(data: ScheduleEntryCreate, _=Depends(require_auth)):
 async def api_toggle_schedule(schedule_id: str, _=Depends(require_auth)):
     schedule = storage.get_schedule(schedule_id)
     if not schedule:
-        raise HTTPException(404, "Schedule not found")
+        raise HTTPException(404, "زمان‌بندی پیدا نشد")
     schedule.enabled = not schedule.enabled
     storage.save_schedule(schedule)
     if schedule.enabled:
@@ -169,16 +173,41 @@ async def api_toggle_schedule(schedule_id: str, _=Depends(require_auth)):
 async def api_delete_schedule(schedule_id: str, _=Depends(require_auth)):
     sched.unregister_schedule(schedule_id)
     if not storage.delete_schedule(schedule_id):
-        raise HTTPException(404, "Schedule not found")
+        raise HTTPException(404, "زمان‌بندی پیدا نشد")
     return {"ok": True}
 
 
 @app.post("/api/schedules/{schedule_id}/run/{action}")
 async def api_run_now(schedule_id: str, action: str, _=Depends(require_auth)):
     if action not in ("enable", "disable"):
-        raise HTTPException(400, "action must be enable or disable")
+        raise HTTPException(400, "عملیات باید enable یا disable باشد")
     await sched._run_action(schedule_id, action)
     return {"ok": True}
+
+
+# ─── API: Settings ────────────────────────────────────────────────────────────
+
+@app.get("/api/settings")
+async def api_get_settings(_=Depends(require_auth)):
+    conf = load_settings()
+    return {
+        "username": conf.get("username", "admin"),
+        "port": conf.get("port", 8181)
+    }
+
+
+@app.post("/api/settings")
+async def api_update_settings(data: SettingsUpdate, _=Depends(require_auth)):
+    conf = load_settings()
+    conf["username"] = data.username.strip()
+    if data.password and data.password.strip():
+        conf["password"] = data.password.strip()
+    conf["port"] = int(data.port)
+    save_settings(conf)
+    return {
+        "ok": True,
+        "message": "تنظیمات با موفقیت ذخیره شد. در صورت تغییر پورت، سرویس را ری‌استارت کنید."
+    }
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────
