@@ -1,13 +1,15 @@
 import json
 import uuid
 import os
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from app.models import PanelConfig, ScheduleEntry
 
 DATA_DIR = Path(__file__).parent / "data"
 PANELS_FILE = DATA_DIR / "panels.json"
 SCHEDULES_FILE = DATA_DIR / "schedules.json"
+LOGS_FILE = DATA_DIR / "logs.json"
 
 
 def _load_json(path: Path) -> list:
@@ -90,3 +92,36 @@ def delete_schedule(schedule_id: str) -> bool:
     new = [s for s in schedules if str(s.get("id")).strip() != target_id]
     _save_json(SCHEDULES_FILE, new)
     return True
+
+
+# ─── Execution Logs (Persistent) ───────────────────────────────────────────────
+
+def add_log(panel_name: str, inbound_remark: str, action: str, status: str, details: str):
+    """
+    Append an execution log entry and keep the last 300 entries.
+    action: ENABLE | DISABLE | SYNC | TEST
+    status: SUCCESS | FAILED | WARNING
+    """
+    logs = _load_json(LOGS_FILE)
+    entry = {
+        "id": str(uuid.uuid4())[:8],
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "panel": panel_name,
+        "inbound": inbound_remark,
+        "action": action.upper(),
+        "status": status.upper(),
+        "details": details
+    }
+    logs.insert(0, entry)
+    if len(logs) > 300:
+        logs = logs[:300]
+    _save_json(LOGS_FILE, logs)
+    return entry
+
+
+def get_logs() -> List[Dict[str, Any]]:
+    return _load_json(LOGS_FILE)
+
+
+def clear_logs():
+    _save_json(LOGS_FILE, [])

@@ -1,5 +1,6 @@
 import uuid
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -8,7 +9,10 @@ from fastapi.templating import Jinja2Templates
 
 from app import storage, scheduler as sched
 from app.config import load_settings, save_settings
-from app.models import PanelConfigCreate, ScheduleEntryCreate, PanelConfig, ScheduleEntry, SettingsUpdate
+from app.models import (
+    PanelConfigCreate, ScheduleEntryCreate, ScheduleEntryUpdate,
+    PanelConfig, ScheduleEntry, SettingsUpdate
+)
 from app.xui_client import XUIClient
 
 _sessions: set[str] = set()
@@ -18,8 +22,9 @@ logger = logging.getLogger("app")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     sched.scheduler.start()
-    sched.reload_all_schedules()
-    logger.info("Scheduler started.")
+    # Asynchronously load and sync state without blocking startup
+    asyncio.create_task(sched.reload_all_schedules_async())
+    logger.info("Scheduler started and background sync initialized.")
     yield
     sched.scheduler.shutdown(wait=False)
 
@@ -39,6 +44,8 @@ def require_auth(request: Request):
         raise HTTPException(status_code=401, detail="Unauthorized")
     return token
 
+
+# ─── Auth & HTML Pages ────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -80,12 +87,10 @@ async def dashboard(request: Request):
     token = get_session_token(request)
     if not token or token not in _sessions:
         return RedirectResponse("/login")
-    panels = storage.get_panels()
-    schedules = storage.get_schedules()
-    return templates.TemplateResponse("dashboard.html", {"request": request, "panels": panels, "schedules": schedules})
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
-# ─── API: Panels ──────────────────────────────────────────
+# ─── API: Panels ──────────────────────────────────────────────────────────────
 
 @app.get("/api/panels")
 async def api_list_panels(_=Depends(require_auth)):
@@ -94,19 +99,19 @@ async def api_list_panels(_=Depends(require_auth)):
 
 @app.post("/api/panels")
 async def api_add_panel(data: PanelConfigCreate, _=Depends(require_auth)):
-    logger.info(f"Adding panel: {data.name} (URL: {data.url})")
-    print(f"[PANEL_ADD] Saving panel {data.name} with URL {data.url}", flush=True)
     panel = PanelConfig(id=str(uuid.uuid4()), **data.model_dump())
     storage.save_panel(panel)
-    print(f"[PANEL_ADD] Panel {panel.id} saved successfully to storage", flush=True)
+    storage.add_log(panel.name, "All Inbounds", "CONFIG", "SUCCESS", f"Panel {panel.name} added ({panel.url})")
     return panel.model_dump()
 
 
 @app.delete("/api/panels/{panel_id}")
 async def api_delete_panel(panel_id: str, _=Depends(require_auth)):
+    p = storage.get_panel(panel_id)
+    panel_name = p.name if p else panel_id
     if not storage.delete_panel(panel_id):
         raise HTTPException(404, "Panel not found")
-    sched.reload_all_schedules()
+    storage.add_log(panel_name, "All Inbounds", "DELETE", "SUCCESS", f"Panel {panel_name} and related schedules deleted")
     return {"ok": True}
 
 
@@ -118,12 +123,21 @@ async def api_get_inbounds(panel_id: str, _=Depends(require_auth)):
     client = XUIClient(panel.url, panel.token, panel.path_prefix)
     try:
         inbounds = await client.get_inbounds()
-        return [{"id": i["id"], "remark": i.get("remark", f"Inbound {i['id']}"), "enable": i.get("enable", True), "port": i.get("port")} for i in inbounds]
+        return [
+            {
+                "id": i["id"],
+                "remark": i.get("remark", f"Inbound {i['id']}"),
+                "enable": i.get("enable", True),
+                "port": i.get("port")
+            }
+            for i in inbounds
+        ]
     except Exception as e:
+        storage.add_log(panel.name, "Inbounds Query", "TEST", "FAILED", str(e))
         raise HTTPException(502, detail=str(e))
 
 
-# ─── API: Schedules ───────────────────────────────────────
+# ─── API: Schedules ───────────────────────────────────────────────────────────
 
 @app.get("/api/schedules")
 async def api_list_schedules(_=Depends(require_auth)):
@@ -135,7 +149,29 @@ async def api_add_schedule(data: ScheduleEntryCreate, _=Depends(require_auth)):
     schedule = ScheduleEntry(id=str(uuid.uuid4()), enabled=True, **data.model_dump())
     storage.save_schedule(schedule)
     sched.register_schedule(schedule.id)
+    # Immediately evaluate current time and sync inbound state!
+    asyncio.create_task(sched.sync_schedule_state(schedule.id))
     return schedule.model_dump()
+
+
+@app.put("/api/schedules/{schedule_id}")
+async def api_update_schedule(schedule_id: str, data: ScheduleEntryUpdate, _=Depends(require_auth)):
+    schedule = storage.get_schedule(schedule_id)
+    if not schedule:
+        raise HTTPException(404, "Schedule not found")
+
+    updated_data = schedule.model_dump()
+    for field, value in data.model_dump(exclude_unset=True).items():
+        if value is not None:
+            updated_data[field] = value
+
+    updated_schedule = ScheduleEntry(**updated_data)
+    storage.save_schedule(updated_schedule)
+    sched.register_schedule(updated_schedule.id)
+
+    # Re-sync inbound state immediately with new schedule hours
+    asyncio.create_task(sched.sync_schedule_state(updated_schedule.id))
+    return updated_schedule.model_dump()
 
 
 @app.patch("/api/schedules/{schedule_id}/toggle")
@@ -147,6 +183,7 @@ async def api_toggle_schedule(schedule_id: str, _=Depends(require_auth)):
     storage.save_schedule(schedule)
     if schedule.enabled:
         sched.register_schedule(schedule.id)
+        asyncio.create_task(sched.sync_schedule_state(schedule.id))
     else:
         sched.unregister_schedule(schedule.id)
     return schedule.model_dump()
@@ -155,8 +192,7 @@ async def api_toggle_schedule(schedule_id: str, _=Depends(require_auth)):
 @app.delete("/api/schedules/{schedule_id}")
 async def api_delete_schedule(schedule_id: str, _=Depends(require_auth)):
     sched.unregister_schedule(schedule_id)
-    if not storage.delete_schedule(schedule_id):
-        raise HTTPException(404, "Schedule not found")
+    storage.delete_schedule(schedule_id)
     return {"ok": True}
 
 
@@ -164,11 +200,24 @@ async def api_delete_schedule(schedule_id: str, _=Depends(require_auth)):
 async def api_run_now(schedule_id: str, action: str, _=Depends(require_auth)):
     if action not in ("enable", "disable"):
         raise HTTPException(400, "Action must be enable or disable")
-    await sched._run_action(schedule_id, action)
+    await sched._run_action(schedule_id, action, is_sync=False)
     return {"ok": True}
 
 
-# ─── API: Settings ────────────────────────────────────────
+# ─── API: Logs & Stats ────────────────────────────────────────────────────────
+
+@app.get("/api/logs")
+async def api_get_logs(_=Depends(require_auth)):
+    return storage.get_logs()
+
+
+@app.delete("/api/logs")
+async def api_clear_logs(_=Depends(require_auth)):
+    storage.clear_logs()
+    return {"ok": True}
+
+
+# ─── API: Settings ────────────────────────────────────────────────────────────
 
 @app.get("/api/settings")
 async def api_get_settings(_=Depends(require_auth)):
