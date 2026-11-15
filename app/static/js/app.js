@@ -60,13 +60,13 @@ function openModal(title, html) {
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
-function setBtnLoading(btn, loading) {
+function setBtnLoading(btn, loading, text = 'Saving...') {
   if (loading) {
     btn.dataset.origText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> Connecting...';
+    btn.innerHTML = `<span class="spinner"></span> ${text}`;
     btn.disabled = true;
   } else {
-    btn.innerHTML = btn.dataset.origText || btn.innerHTML;
+    btn.innerHTML = btn.dataset.origText || 'Save Panel';
     btn.disabled = false;
   }
 }
@@ -112,16 +112,17 @@ async function addPanel() {
     path_prefix: document.getElementById('pPrefix').value.trim() || '/panel',
   };
   if (!data.name || !data.url || !data.token) { toast('Please fill all fields', false); return; }
-  setBtnLoading(btn, true);
+  setBtnLoading(btn, true, 'Saving...');
   try {
     await api('POST', '/api/panels', data);
     closeModal();
-    toast('Panel saved! Click "Test" to verify connectivity.');
-    addLog('Panel "' + data.name + '" added', 'success');
+    toast('Panel saved! Click "Test" to check connectivity.');
+    addLog('Panel "' + data.name + '" saved successfully', 'success');
     loadPanels();
   } catch (e) {
     toast('Error: ' + e.message, false);
     addLog('Panel add failed: ' + e.message, 'error');
+  } finally {
     setBtnLoading(btn, false);
   }
 }
