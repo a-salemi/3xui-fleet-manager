@@ -96,10 +96,10 @@ function renderPanels() {
 function showAddPanel() {
   openModal('Add Panel', `
     <div class="form-group"><label>Panel Name</label><input class="form-input" id="pName" placeholder="My Server"/></div>
-    <div class="form-group"><label>Panel URL (including sub-path if any)</label><input class="form-input" id="pUrl" placeholder="https://domain.com:2053"/></div>
+    <div class="form-group"><label>Panel URL</label><input class="form-input" id="pUrl" placeholder="https://domain.com:2053/subpath"/></div>
     <div class="form-group"><label>API Token (Bearer)</label><input class="form-input" id="pToken" placeholder="Token from Panel Settings > Security"/></div>
-    <div class="form-group"><label>Path Prefix</label><input class="form-input" id="pPrefix" value="/panel"/><small style="color:var(--muted);margin-top:4px;display:block">Usually /panel — if your panel has a sub-path like /mysub, set URL to https://domain:port/mysub and keep this as /panel</small></div>
-    <button class="btn btn-primary" id="btnAddPanel" style="width:100%;margin-top:8px" onclick="addPanel()">Connect & Save</button>
+    <div class="form-group"><label>Path Prefix</label><input class="form-input" id="pPrefix" value="/panel"/><small style="color:var(--muted);margin-top:4px;display:block">Usually /panel</small></div>
+    <button class="btn btn-primary" id="btnAddPanel" style="width:100%;margin-top:8px" onclick="addPanel()">Save Panel</button>
   `);
 }
 
@@ -116,11 +116,11 @@ async function addPanel() {
   try {
     await api('POST', '/api/panels', data);
     closeModal();
-    toast('Panel connected successfully!');
+    toast('Panel saved! Click "Test" to verify connectivity.');
     addLog('Panel "' + data.name + '" added', 'success');
     loadPanels();
   } catch (e) {
-    toast('Connection failed: ' + e.message, false);
+    toast('Error: ' + e.message, false);
     addLog('Panel add failed: ' + e.message, 'error');
     setBtnLoading(btn, false);
   }

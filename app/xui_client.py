@@ -32,7 +32,7 @@ class XUIClient:
         return httpx.AsyncClient(
             verify=False,
             follow_redirects=True,
-            timeout=15.0,
+            timeout=8.0,
             auth=self.auth,
             headers={"Content-Type": "application/json", "Accept": "application/json"}
         )

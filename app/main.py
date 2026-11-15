@@ -95,11 +95,8 @@ async def api_list_panels(_=Depends(require_auth)):
 @app.post("/api/panels")
 async def api_add_panel(data: PanelConfigCreate, _=Depends(require_auth)):
     panel = PanelConfig(id=str(uuid.uuid4()), **data.model_dump())
-    client = XUIClient(panel.url, panel.token, panel.path_prefix)
-    try:
-        await client.test_connection()
-    except Exception as e:
-        raise HTTPException(400, detail=f"Cannot connect to panel: {e}")
+    # Save immediately without blocking connection test.
+    # User can verify connectivity via the Test button.
     storage.save_panel(panel)
     return panel.model_dump()
 
