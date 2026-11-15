@@ -24,15 +24,33 @@ function switchTab(tab) {
 }
 
 async function api(method, path, body) {
-  const opts = { method, headers: {'Content-Type':'application/json'} };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(path, opts);
-  if (r.status === 302 || r.redirected) { window.location = '/login'; return null; }
-  if (!r.ok) {
-    const e = await r.json().catch(() => ({detail: r.statusText}));
-    throw new Error(e.detail || 'Request failed');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout maximum
+  try {
+    const opts = { 
+      method, 
+      headers: {'Content-Type': 'application/json'},
+      signal: controller.signal
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(path, opts);
+    clearTimeout(timeoutId);
+    if (r.status === 401 || r.status === 302 || r.redirected) { 
+      window.location = '/login'; 
+      return null; 
+    }
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({detail: r.statusText}));
+      throw new Error(e.detail || 'Request failed with status ' + r.status);
+    }
+    return r.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out (server did not respond in 10s)');
+    }
+    throw err;
   }
-  return r.json();
 }
 
 function toast(msg, ok=true) {

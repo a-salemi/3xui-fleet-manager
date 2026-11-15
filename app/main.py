@@ -94,10 +94,11 @@ async def api_list_panels(_=Depends(require_auth)):
 
 @app.post("/api/panels")
 async def api_add_panel(data: PanelConfigCreate, _=Depends(require_auth)):
+    logger.info(f"Adding panel: {data.name} (URL: {data.url})")
+    print(f"[PANEL_ADD] Saving panel {data.name} with URL {data.url}", flush=True)
     panel = PanelConfig(id=str(uuid.uuid4()), **data.model_dump())
-    # Save immediately without blocking connection test.
-    # User can verify connectivity via the Test button.
     storage.save_panel(panel)
+    print(f"[PANEL_ADD] Panel {panel.id} saved successfully to storage", flush=True)
     return panel.model_dump()
 
 
