@@ -3,25 +3,48 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>3X-UI Inbound Manager · Dashboard</title>
+<title>3X-UI Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css?v=4.0"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=5.2"/>
 </head>
 <body>
 
+<!-- Initial Page Preloader -->
+<div id="appLoader" class="app-loader">
+  <div class="loader-content">
+    <div class="loader-orb">
+      <span>⚡</span>
+      <div class="loader-ring"></div>
+    </div>
+    <h3 class="loader-title">3X-UI MANAGER</h3>
+    <p class="loader-subtitle">Loading system telemetry & schedules...</p>
+  </div>
+</div>
+
 <div class="app-container">
 
-  <!-- Mobile Header -->
+  <!-- Mobile Header Bar -->
   <header class="mobile-nav">
     <div class="brand">
       <div class="logo-orb">⚡</div>
       <span class="brand-title">3X-UI Manager</span>
     </div>
-    <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
-      <span></span><span></span><span></span>
-    </button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="lang-picker-container compact">
+        <select class="lang-select" onchange="setLanguage(this.value)">
+          <option value="en">EN</option>
+          <option value="fa">FA</option>
+          <option value="ru">RU</option>
+          <option value="tr">TR</option>
+          <option value="zh">ZH</option>
+        </select>
+      </div>
+      <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </header>
 
   <!-- Sidebar Navigation -->
@@ -33,32 +56,37 @@
       </div>
       <div class="brand-info">
         <h2 class="brand-title">3X-UI</h2>
-        <span class="brand-badge">PRO SCHEDULER</span>
+        <span class="brand-badge">FLEET AUTOMATION</span>
       </div>
     </div>
 
     <nav class="nav-menu">
-      <a href="#" class="nav-link active" data-tab="schedules">
+      <a href="/dashboard" class="nav-link active" data-route="dashboard">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span data-i18n="nav_overview">Overview</span>
+      </a>
+
+      <a href="/schedules" class="nav-link" data-route="schedules">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span>Schedules</span>
+        <span data-i18n="nav_schedules">Schedules</span>
         <span class="nav-count" id="badgeScheduleCount">0</span>
       </a>
 
-      <a href="#" class="nav-link" data-tab="panels">
+      <a href="/panels" class="nav-link" data-route="panels">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        <span>Panels</span>
+        <span data-i18n="nav_panels">Panels</span>
         <span class="nav-count" id="badgePanelCount">0</span>
       </a>
 
-      <a href="#" class="nav-link" data-tab="logs">
+      <a href="/logs" class="nav-link" data-route="logs">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span>Activity Logs</span>
+        <span data-i18n="nav_logs">Activity Logs</span>
         <span class="pulse-indicator"></span>
       </a>
 
-      <a href="#" class="nav-link" data-tab="settings">
+      <a href="/settings" class="nav-link" data-route="settings">
         <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Settings</span>
+        <span data-i18n="nav_settings">Settings</span>
       </a>
     </nav>
 
@@ -76,75 +104,161 @@
     </div>
   </aside>
 
-  <!-- Main Content View -->
+  <!-- Main Viewport -->
   <main class="main-content">
 
-    <!-- Top Dashboard Header -->
-    <header class="top-header">
-      <div class="header-titles">
-        <h1 class="view-title" id="viewTitle">Inbound Schedules</h1>
-        <p class="view-subtitle" id="viewSubtitle">Automated time-based inbound enabling and disabling</p>
+    <!-- Global Topbar: Separate & Uncluttered -->
+    <header class="global-topbar">
+      <div class="breadcrumb-trail">
+        <span class="crumb-root">3X-UI Manager</span>
+        <span class="crumb-separator">/</span>
+        <span class="crumb-current" id="crumbCurrent">Overview</span>
       </div>
-      <div class="header-actions" id="topActions">
+
+      <div class="topbar-controls">
+        <div class="system-clock-badge">
+          <span class="clock-icon">🕒</span>
+          <span id="liveClockDisplay">--:--:--</span>
+        </div>
+
         <div class="lang-picker-container">
           <span class="lang-globe">🌐</span>
           <select id="langSelector" class="lang-select" onchange="setLanguage(this.value)">
             <option value="en">English (US)</option>
-            <option value="fa">فارسی (Persian)</option>
-            <option value="ru">Русский (Russian)</option>
-            <option value="tr">Türkçe (Turkish)</option>
-            <option value="zh">简体中文 (Chinese)</option>
+            <option value="fa">فارسی (FA)</option>
+            <option value="ru">Русский (RU)</option>
+            <option value="tr">Türkçe (TR)</option>
+            <option value="zh">简体中文 (ZH)</option>
           </select>
         </div>
-        <button class="btn btn-primary glow-btn" onclick="showAddSchedule()">
-          <span class="btn-icon">+</span> <span data-i18n="btn_new_schedule">New Schedule</span>
-        </button>
       </div>
     </header>
 
-    <!-- Stat Cards Overview -->
-    <section class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-icon-box cyan">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="metric-details">
-          <span class="metric-name">Active Schedules</span>
-          <h3 class="metric-value" id="statActiveSchedules">0</h3>
+    <!-- TAB 1: OVERVIEW & SERVER TELEMETRY (/dashboard) -->
+    <section class="tab-pane active" id="tab-dashboard">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="view-title" data-i18n="nav_overview">System Overview</h2>
+          <p class="view-subtitle">Live hardware telemetry and automated service statuses</p>
         </div>
       </div>
 
-      <div class="metric-card">
-        <div class="metric-icon-box purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+      <!-- Live Server Hardware Gauges -->
+      <div class="telemetry-grid">
+        <!-- CPU Gauge -->
+        <div class="gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title" data-i18n="stat_cpu">CPU Usage</span>
+            <span class="gauge-badge" id="cpuBadge">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill cyan" id="cpuFill" style="width: 0%;"></div>
+          </div>
+          <div class="gauge-footer">
+            <span id="cpuCores">-- Cores</span>
+            <span id="cpuLoad">Load: --</span>
+          </div>
         </div>
-        <div class="metric-details">
-          <span class="metric-name">Connected Panels</span>
-          <h3 class="metric-value" id="statTotalPanels">0</h3>
+
+        <!-- RAM Gauge -->
+        <div class="gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title" data-i18n="stat_ram">Memory (RAM)</span>
+            <span class="gauge-badge" id="ramBadge">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill purple" id="ramFill" style="width: 0%;"></div>
+          </div>
+          <div class="gauge-footer">
+            <span id="ramUsage">0.0 GB / 0.0 GB</span>
+            <span id="ramPercent">0%</span>
+          </div>
+        </div>
+
+        <!-- SWAP Gauge -->
+        <div class="gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title" data-i18n="stat_swap">Swap Memory</span>
+            <span class="gauge-badge" id="swapBadge">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill amber" id="swapFill" style="width: 0%;"></div>
+          </div>
+          <div class="gauge-footer">
+            <span id="swapUsage">0.0 GB / 0.0 GB</span>
+            <span id="swapPercent">0%</span>
+          </div>
+        </div>
+
+        <!-- DISK Gauge -->
+        <div class="gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title" data-i18n="stat_disk">Disk Storage</span>
+            <span class="gauge-badge" id="diskBadge">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill green" id="diskFill" style="width: 0%;"></div>
+          </div>
+          <div class="gauge-footer">
+            <span id="diskUsage">0.0 GB / 0.0 GB</span>
+            <span id="diskPercent">0%</span>
+          </div>
         </div>
       </div>
 
-      <div class="metric-card">
-        <div class="metric-icon-box green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <!-- Quick Metrics Summary -->
+      <div class="metrics-grid" style="margin-top: 24px;">
+        <div class="metric-card" onclick="navigateRoute('schedules')" style="cursor: pointer;">
+          <div class="metric-icon-box cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="metric-details">
+            <span class="metric-name" data-i18n="stat_schedules">Active Schedules</span>
+            <h3 class="metric-value" id="statActiveSchedules">0</h3>
+          </div>
         </div>
-        <div class="metric-details">
-          <span class="metric-name">Sync Status</span>
-          <h3 class="metric-value text-success">Healthy</h3>
+
+        <div class="metric-card" onclick="navigateRoute('panels')" style="cursor: pointer;">
+          <div class="metric-icon-box purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          </div>
+          <div class="metric-details">
+            <span class="metric-name" data-i18n="stat_panels">Connected Panels</span>
+            <h3 class="metric-value" id="statTotalPanels">0</h3>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="metric-details">
+            <span class="metric-name" data-i18n="stat_uptime">Server Uptime</span>
+            <h3 class="metric-value" id="statUptime" style="font-size:17px;">--</h3>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- TAB 1: Schedules -->
-    <section class="tab-pane active" id="tab-schedules">
+    <!-- TAB 2: SCHEDULES (/schedules) -->
+    <section class="tab-pane" id="tab-schedules">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="view-title" data-i18n="nav_schedules">Inbound Schedules</h2>
+          <p class="view-subtitle">Automatic timer rules for enabling and disabling inbounds</p>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="showAddSchedule()">
+            + <span data-i18n="btn_new_schedule">New Schedule</span>
+          </button>
+        </div>
+      </div>
+
       <div class="content-card">
         <div class="card-toolbar">
           <div class="toolbar-search">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchScheduleInput" placeholder="Filter by inbound or panel..." oninput="filterSchedules()"/>
-          </div>
-          <div class="toolbar-actions">
-            <button class="btn btn-primary" onclick="showAddSchedule()">+ Add Schedule</button>
+            <input type="text" id="searchScheduleInput" data-i18n-ph="search_ph" placeholder="Filter by inbound or panel..." oninput="filterSchedules()"/>
           </div>
         </div>
 
@@ -152,100 +266,108 @@
           <table class="modern-table">
             <thead>
               <tr>
-                <th>Inbound Service</th>
-                <th>Target Panel</th>
-                <th>Active Window (24h)</th>
-                <th>Timezone</th>
-                <th>Auto Schedule</th>
-                <th>Current Status</th>
-                <th style="text-align:right;">Actions</th>
+                <th data-i18n="th_inbound">Inbound Service</th>
+                <th data-i18n="th_panel">Target Panel</th>
+                <th data-i18n="th_window">Active Window (24h)</th>
+                <th data-i18n="th_timezone">Timezone</th>
+                <th data-i18n="th_auto">Auto Schedule</th>
+                <th data-i18n="th_status">Current Status</th>
+                <th style="text-align:right;" data-i18n="th_actions">Actions</th>
               </tr>
             </thead>
-            <tbody id="schedulesTableBody">
-              <!-- Rendered via app.js -->
-            </tbody>
+            <tbody id="schedulesTableBody"></tbody>
           </table>
         </div>
         <div class="empty-state-box" id="schedulesEmpty" style="display:none;">
           <div class="empty-illustration">⏰</div>
-          <h4>No automated schedules found</h4>
-          <p>Create your first schedule to start turning inbounds ON and OFF on your custom hours.</p>
-          <button class="btn btn-primary" onclick="showAddSchedule()">Create Schedule</button>
+          <h4 data-i18n="empty_schedules_title">No automated schedules found</h4>
+          <p data-i18n="empty_schedules_sub">Create your first schedule to start turning inbounds ON and OFF on your custom hours.</p>
+          <button class="btn btn-primary" onclick="showAddSchedule()">+ <span data-i18n="btn_new_schedule">New Schedule</span></button>
         </div>
       </div>
     </section>
 
-    <!-- TAB 2: Panels -->
+    <!-- TAB 3: PANELS (/panels) -->
     <section class="tab-pane" id="tab-panels">
-      <div class="panels-header-bar">
-        <h3>Connected 3X-UI Instances</h3>
-        <button class="btn btn-primary" onclick="showAddPanel()">+ Add New Panel</button>
+      <div class="section-title-bar">
+        <div>
+          <h2 class="view-title" data-i18n="nav_panels">Connected Panels</h2>
+          <p class="view-subtitle">Manage token authenticated 3X-UI instances</p>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="showAddPanel()">
+            + <span data-i18n="btn_new_panel">Add Panel</span>
+          </button>
+        </div>
       </div>
-      <div class="panels-grid" id="panelsGrid">
-        <!-- Rendered via app.js -->
-      </div>
+
+      <div class="panels-grid" id="panelsGrid"></div>
       <div class="empty-state-box" id="panelsEmpty" style="display:none;">
         <div class="empty-illustration">🖥️</div>
-        <h4>No panels connected</h4>
-        <p>Connect your 3X-UI panel instance with an API Bearer token.</p>
-        <button class="btn btn-primary" onclick="showAddPanel()">Add Panel</button>
+        <h4 data-i18n="empty_panels_title">No panels connected</h4>
+        <p data-i18n="empty_panels_sub">Connect your 3X-UI panel instance with an API Bearer token.</p>
+        <button class="btn btn-primary" onclick="showAddPanel()">+ <span data-i18n="btn_new_panel">Add Panel</span></button>
       </div>
     </section>
 
-    <!-- TAB 3: Activity Logs -->
+    <!-- TAB 4: ACTIVITY LOGS (/logs) -->
     <section class="tab-pane" id="tab-logs">
-      <div class="content-card">
-        <div class="card-toolbar">
-          <div class="toolbar-info">
-            <h3>System Execution History</h3>
-            <p>Every schedule trigger, state synchronization, and manual action is tracked in real-time.</p>
-          </div>
-          <div class="toolbar-btns">
-            <button class="btn btn-ghost" onclick="loadBackendLogs()">🔄 Refresh</button>
-            <button class="btn btn-danger-ghost" onclick="clearBackendLogs()">🗑 Clear Logs</button>
-          </div>
+      <div class="section-title-bar">
+        <div>
+          <h2 class="view-title" data-i18n="nav_logs">Activity Logs</h2>
+          <p class="view-subtitle">Audit trail of execution events, automatic synchronizations, and manual triggers</p>
         </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost" onclick="loadBackendLogs()">🔄 <span data-i18n="btn_refresh">Refresh</span></button>
+          <button class="btn btn-danger-ghost" onclick="clearBackendLogs()">🗑 <span data-i18n="btn_clear_logs">Clear Logs</span></button>
+        </div>
+      </div>
 
+      <div class="content-card">
         <div class="table-responsive">
           <table class="modern-table logs-table">
             <thead>
               <tr>
-                <th>Timestamp</th>
-                <th>Panel</th>
-                <th>Target Inbound</th>
+                <th data-i18n="th_timestamp">Timestamp</th>
+                <th data-i18n="th_panel">Panel</th>
+                <th data-i18n="th_inbound">Target Inbound</th>
                 <th>Action</th>
                 <th>Status</th>
-                <th>Execution Details</th>
+                <th data-i18n="th_details">Execution Details</th>
               </tr>
             </thead>
-            <tbody id="logsTableBody">
-              <!-- Rendered via app.js -->
-            </tbody>
+            <tbody id="logsTableBody"></tbody>
           </table>
         </div>
         <div class="empty-state-box" id="logsEmpty" style="display:none;">
           <div class="empty-illustration">📋</div>
-          <h4>No execution logs yet</h4>
-          <p>Execution logs will appear automatically once a schedule is executed or manually tested.</p>
+          <h4 data-i18n="empty_logs_title">No execution logs yet</h4>
+          <p data-i18n="empty_logs_sub">Execution logs will appear automatically once a schedule is executed.</p>
         </div>
       </div>
     </section>
 
-    <!-- TAB 4: Settings & Integrations -->
+    <!-- TAB 5: SETTINGS (/settings) -->
     <section class="tab-pane" id="tab-settings">
-      
+      <div class="section-title-bar">
+        <div>
+          <h2 class="view-title" data-i18n="nav_settings">System Settings</h2>
+          <p class="view-subtitle">Telegram bot alerts, multi-user accounts, and network port configuration</p>
+        </div>
+      </div>
+
       <!-- Card A: Telegram Bot Alerts -->
       <div class="content-card" style="margin-bottom:24px;">
         <div class="card-toolbar">
           <div class="toolbar-info">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:20px;">🤖</span>
-              <h3>Telegram Bot Notifications</h3>
+              <h3 data-i18n="tg_title">Telegram Bot Notifications</h3>
             </div>
-            <p>Receive real-time alerts whenever an inbound is enabled, disabled, or if an error occurs.</p>
+            <p data-i18n="tg_sub">Receive real-time alerts whenever an inbound is enabled, disabled, or if an error occurs.</p>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Enable Bot:</span>
+            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Bot Alerts:</span>
             <span class="toggle-switch" id="tgEnabledToggle" onclick="toggleTelegramState()"></span>
           </div>
         </div>
@@ -253,35 +375,39 @@
         <div style="padding:24px;">
           <div class="form-grid-2">
             <div class="form-field">
-              <label>Telegram Bot Token</label>
+              <label data-i18n="tg_token">Telegram Bot Token</label>
               <input type="text" class="form-input" id="tgToken" placeholder="e.g. 123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"/>
-              <span class="field-hint">Obtained from @BotFather in Telegram.</span>
+              <span class="field-hint" data-i18n="tg_token_sub">Obtained from @BotFather in Telegram.</span>
             </div>
 
             <div class="form-field">
-              <label>Chat ID / Channel ID</label>
+              <label data-i18n="tg_chat_id">Chat ID / Channel ID</label>
               <input type="text" class="form-input" id="tgChatId" placeholder="e.g. 123456789 or -1001234567890"/>
-              <span class="field-hint">Your numeric Telegram User ID or Group/Channel ID.</span>
+              <span class="field-hint" data-i18n="tg_chat_id_sub">Your numeric Telegram User ID or Group/Channel ID.</span>
             </div>
           </div>
 
           <div class="form-grid-2" style="margin-top:14px;">
             <div class="form-field">
-              <label>SOCKS5 Proxy (Optional)</label>
+              <label data-i18n="tg_proxy">SOCKS5 Proxy (Optional)</label>
               <input type="text" class="form-input" id="tgProxy" placeholder="socks5://Q0BXgUEGb5:BvdlunejoA@94.183.153.53:80"/>
-              <span class="field-hint">Enables SOCKS5 proxy to connect to Telegram (e.g. for filtered servers).</span>
+              <span class="field-hint" data-i18n="tg_proxy_sub">Enables SOCKS5 proxy to connect to Telegram (e.g. for filtered servers).</span>
             </div>
 
             <div class="form-field">
-              <label>Custom Telegram API Server (Optional)</label>
+              <label data-i18n="tg_api_server">Custom Telegram API Server (Optional)</label>
               <input type="text" class="form-input" id="tgApiServer" placeholder="https://api.example.com"/>
-              <span class="field-hint">Custom Bot API endpoint / reverse proxy. Leave empty to use official API.</span>
+              <span class="field-hint" data-i18n="tg_api_server_sub">Custom Bot API endpoint / reverse proxy. Leave empty to use official API.</span>
             </div>
           </div>
 
           <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
-            <button class="btn btn-primary" id="btnSaveTelegram" onclick="saveTelegramSettings()">Save Telegram Settings</button>
-            <button class="btn btn-ghost" id="btnTestTelegram" onclick="testTelegramChannel()">🔔 Send Test Notification</button>
+            <button class="btn btn-primary" id="btnSaveTelegram" onclick="saveTelegramSettings()">
+              <span data-i18n="tg_save_btn">Save Telegram Settings</span>
+            </button>
+            <button class="btn btn-ghost" id="btnTestTelegram" onclick="testTelegramChannel()">
+              <span data-i18n="tg_test_btn">🔔 Send Test Notification</span>
+            </button>
           </div>
         </div>
       </div>
@@ -292,12 +418,12 @@
           <div class="toolbar-info">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:20px;">👥</span>
-              <h3>User Management & Access Control</h3>
+              <h3 data-i18n="user_title">User Management & Access Control</h3>
             </div>
-            <p>Manage accounts and roles: <b>Admin</b> (full control), <b>Operator</b> (schedules & triggers), <b>Viewer</b> (read-only).</p>
+            <p data-i18n="user_sub">Manage accounts and roles: <b>Admin</b> (full control), <b>Operator</b> (schedules & triggers), <b>Viewer</b> (read-only).</p>
           </div>
           <div>
-            <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">+ Add New User</button>
+            <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">+ <span data-i18n="btn_new_user">Add User</span></button>
           </div>
         </div>
 
@@ -305,15 +431,13 @@
           <table class="modern-table">
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Access Role</th>
-                <th>Created At</th>
-                <th style="text-align:right;">Actions</th>
+                <th data-i18n="th_username">Username</th>
+                <th data-i18n="th_role">Access Role</th>
+                <th data-i18n="th_created">Created At</th>
+                <th style="text-align:right;" data-i18n="th_actions">Actions</th>
               </tr>
             </thead>
-            <tbody id="usersTableBody">
-              <!-- Rendered via app.js -->
-            </tbody>
+            <tbody id="usersTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -324,9 +448,9 @@
           <div class="toolbar-info">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:20px;">🌐</span>
-              <h3>Web Dashboard Port</h3>
+              <h3 data-i18n="port_title">Web Dashboard Port</h3>
             </div>
-            <p>Customize the manager listening port (default is <code>8181</code>).</p>
+            <p data-i18n="port_sub">Customize the manager listening port (default is <code>8181</code>).</p>
           </div>
         </div>
         <div style="padding:24px;max-width:420px;">
@@ -335,7 +459,9 @@
             <input type="number" class="form-input" id="setPort" placeholder="8181" min="1" max="65535"/>
             <span class="field-hint">After changing, run <code>systemctl restart xui-manager</code> on your server.</span>
           </div>
-          <button class="btn btn-primary" onclick="savePortSetting()">Save Port</button>
+          <button class="btn btn-primary" onclick="savePortSetting()">
+            <span data-i18n="port_save">Save Port</span>
+          </button>
         </div>
       </div>
 
@@ -361,7 +487,7 @@
 <!-- Notification Toast Container -->
 <div class="toast-stack" id="toastStack"></div>
 
-<script src="/static/js/i18n.js?v=4.1"></script>
-<script src="/static/js/app.js?v=4.1"></script>
+<script src="/static/js/i18n.js?v=5.2"></script>
+<script src="/static/js/app.js?v=5.2"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from app import storage, scheduler as sched, users
 from app.config import load_settings, save_settings
+from app.system import get_system_metrics
 from app.telegram import test_telegram_alert
 from app.models import (
     PanelConfigCreate, ScheduleEntryCreate, ScheduleEntryUpdate,
@@ -96,11 +97,22 @@ async def logout(request: Request):
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
+@app.get("/schedules", response_class=HTMLResponse)
+@app.get("/panels", response_class=HTMLResponse)
+@app.get("/logs", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
+async def spa_page(request: Request):
     token = request.cookies.get("session")
     if not token or token not in _sessions:
         return RedirectResponse("/login")
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+# ─── API: System Metrics & Monitoring ─────────────────────────────────────────
+
+@app.get("/api/system/stats")
+async def api_system_stats(_=Depends(get_current_user)):
+    return get_system_metrics()
 
 
 # ─── API: Current User (Me) ───────────────────────────────────────────────────

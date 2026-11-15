@@ -4,17 +4,27 @@ let schedules = [];
 let backendLogs = [];
 let allUsers = [];
 let currentUser = { username: 'Admin', role: 'admin' };
-let currentTab = 'schedules';
+let currentRoute = 'dashboard';
 let telegramEnabled = false;
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Navigation Tabs
-  document.querySelectorAll('.nav-link[data-tab]').forEach(el => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Start live clock
+  updateLiveClock();
+  setInterval(updateLiveClock, 1000);
+
+  // Setup sidebar navigation clicks
+  document.querySelectorAll('.nav-link[data-route]').forEach(el => {
     el.addEventListener('click', e => {
       e.preventDefault();
-      switchTab(el.dataset.tab);
+      const route = el.getAttribute('data-route');
+      navigateRoute(route);
       if (window.innerWidth <= 868) toggleSidebar(false);
     });
+  });
+
+  // Handle browser Back / Forward buttons
+  window.addEventListener('popstate', () => {
+    handleUrlRoute(false);
   });
 
   // Initialize Language
@@ -22,21 +32,107 @@ document.addEventListener('DOMContentLoaded', () => {
     setLanguage(currentLang);
   }
 
-  // Initial Load
-  loadAllData();
+  // Initial Load from URL
+  handleUrlRoute(false);
+  await loadAllData();
 
-  // Auto-refresh logs and status every 15 seconds
+  // Dismiss Preloader smoothly
+  hideAppLoader();
+
+  // Polling: System metrics every 4s, Schedules/Logs every 15s
   setInterval(() => {
-    if (currentTab === 'logs') loadBackendLogs();
-    if (currentTab === 'schedules') loadSchedules(false);
+    if (currentRoute === 'dashboard') loadSystemMetrics();
+  }, 4000);
+
+  setInterval(() => {
+    if (currentRoute === 'logs') loadBackendLogs();
+    if (currentRoute === 'schedules') loadSchedules(false);
   }, 15000);
 });
 
+function hideAppLoader() {
+  const loader = document.getElementById('appLoader');
+  if (loader) {
+    loader.classList.add('fade-out');
+    setTimeout(() => loader.remove(), 500);
+  }
+}
+
+function updateLiveClock() {
+  const el = document.getElementById('liveClockDisplay');
+  if (el) {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString();
+  }
+}
+
+// ─── SPA Routing with HTML5 History ──────────────────────────────────────────
+function handleUrlRoute(pushState = true) {
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  const validRoutes = ['dashboard', 'schedules', 'panels', 'logs', 'settings'];
+  const route = validRoutes.includes(path) ? path : 'dashboard';
+  navigateRoute(route, pushState);
+}
+
+function navigateRoute(route, pushState = true) {
+  currentRoute = route;
+
+  // Update browser address bar without page refresh
+  if (pushState) {
+    const url = (route === 'dashboard') ? '/dashboard' : `/${route}`;
+    history.pushState({ route }, '', url);
+  }
+
+  // Update sidebar active link
+  document.querySelectorAll('.nav-link[data-route]').forEach(e => {
+    e.classList.toggle('active', e.getAttribute('data-route') === route);
+  });
+
+  // Show correct tab pane
+  document.querySelectorAll('.tab-pane').forEach(e => e.classList.remove('active'));
+  const activePane = document.getElementById('tab-' + route);
+  if (activePane) activePane.classList.add('active');
+
+  // Update topbar breadcrumbs
+  updateRouteViewTitles();
+
+  // Route-specific instant actions
+  if (route === 'dashboard') loadSystemMetrics();
+  if (route === 'logs') loadBackendLogs();
+}
+
+function updateRouteViewTitles() {
+  const titles = {
+    dashboard: t('nav_overview') || 'Overview',
+    schedules: t('nav_schedules') || 'Schedules',
+    panels: t('nav_panels') || 'Panels',
+    logs: t('nav_logs') || 'Activity Logs',
+    settings: t('nav_settings') || 'Settings'
+  };
+
+  const crumb = document.getElementById('crumbCurrent');
+  if (crumb) crumb.textContent = titles[currentRoute] || 'Dashboard';
+  document.title = `${titles[currentRoute] || 'Dashboard'} · 3X-UI Manager`;
+}
+
+function toggleSidebar(forceState) {
+  const sb = document.getElementById('sidebar');
+  if (forceState !== undefined) {
+    sb.classList.toggle('open', forceState);
+  } else {
+    sb.classList.toggle('open');
+  }
+}
+
+// ─── Data Initialization ─────────────────────────────────────────────────────
 async function loadAllData() {
   await loadMe();
-  await loadPanels();
-  await loadSchedules();
-  await loadBackendLogs();
+  await Promise.all([
+    loadSystemMetrics(),
+    loadPanels(),
+    loadSchedules(),
+    loadBackendLogs()
+  ]);
   if (currentUser.role === 'admin') {
     await loadSettings();
     await loadUsers();
@@ -54,57 +150,14 @@ async function loadMe() {
       if (uSec) uSec.style.display = 'none';
     }
   } catch (e) {
-    console.error('Failed to load current user profile:', e);
-  }
-}
-
-// ─── Navigation & Views ──────────────────────────────────────────────────────
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.nav-link[data-tab]').forEach(e => e.classList.remove('active'));
-  const activeLink = document.querySelector(`.nav-link[data-tab="${tab}"]`);
-  if (activeLink) activeLink.classList.add('active');
-
-  document.querySelectorAll('.tab-pane').forEach(e => e.classList.remove('active'));
-  const activePane = document.getElementById('tab-' + tab);
-  if (activePane) activePane.classList.add('active');
-
-  const titles = {
-    schedules: { title: 'Inbound Schedules', sub: 'Automated time-based inbound enabling and disabling' },
-    panels: { title: 'Connected Panels', sub: 'Manage your 3X-UI instances and token authentications' },
-    logs: { title: 'Execution Logs', sub: 'Audit trail of automatic schedules and manual trigger actions' },
-    settings: { title: 'Manager Settings', sub: 'Configure panel security credentials and web listening port' }
-  };
-
-  const meta = titles[tab] || { title: 'Dashboard', sub: '' };
-  document.getElementById('viewTitle').textContent = meta.title;
-  document.getElementById('viewSubtitle').textContent = meta.sub;
-
-  const topActions = document.getElementById('topActions');
-  if (tab === 'schedules') {
-    topActions.innerHTML = `<button class="btn btn-primary" onclick="showAddSchedule()">+ New Schedule</button>`;
-  } else if (tab === 'panels') {
-    topActions.innerHTML = `<button class="btn btn-primary" onclick="showAddPanel()">+ New Panel</button>`;
-  } else if (tab === 'logs') {
-    topActions.innerHTML = `<button class="btn btn-ghost" onclick="loadBackendLogs()">🔄 Refresh Logs</button>`;
-  } else {
-    topActions.innerHTML = '';
-  }
-}
-
-function toggleSidebar(forceState) {
-  const sb = document.getElementById('sidebar');
-  if (forceState !== undefined) {
-    sb.classList.toggle('open', forceState);
-  } else {
-    sb.classList.toggle('open');
+    console.error('Failed to load user profile:', e);
   }
 }
 
 // ─── API Client with Abort Timeout ───────────────────────────────────────────
 async function api(method, path, body) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s safe timeout
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
     const opts = {
@@ -169,6 +222,43 @@ function setBtnLoading(btn, loading, text = 'Saving...') {
   } else {
     btn.innerHTML = btn.dataset.origText || 'Save';
     btn.disabled = false;
+  }
+}
+
+// ─── 0. LIVE HARDWARE TELEMETRY ──────────────────────────────────────────────
+async function loadSystemMetrics() {
+  try {
+    const m = await api('GET', '/api/system/stats');
+    if (!m) return;
+
+    // CPU
+    document.getElementById('cpuBadge').textContent = `${m.cpu_percent}%`;
+    document.getElementById('cpuFill').style.width = `${Math.min(m.cpu_percent, 100)}%`;
+    document.getElementById('cpuCores').textContent = `${m.cpu_cores} Cores`;
+    document.getElementById('cpuLoad').textContent = `Load: ${m.load_avg.join(', ')}`;
+
+    // RAM
+    document.getElementById('ramBadge').textContent = `${m.ram_percent}%`;
+    document.getElementById('ramFill').style.width = `${Math.min(m.ram_percent, 100)}%`;
+    document.getElementById('ramUsage').textContent = `${m.ram_used_gb} GB / ${m.ram_total_gb} GB`;
+    document.getElementById('ramPercent').textContent = `${m.ram_percent}%`;
+
+    // SWAP
+    document.getElementById('swapBadge').textContent = `${m.swap_percent}%`;
+    document.getElementById('swapFill').style.width = `${Math.min(m.swap_percent, 100)}%`;
+    document.getElementById('swapUsage').textContent = `${m.swap_used_gb} GB / ${m.swap_total_gb} GB`;
+    document.getElementById('swapPercent').textContent = `${m.swap_percent}%`;
+
+    // DISK
+    document.getElementById('diskBadge').textContent = `${m.disk_percent}%`;
+    document.getElementById('diskFill').style.width = `${Math.min(m.disk_percent, 100)}%`;
+    document.getElementById('diskUsage').textContent = `${m.disk_used_gb} GB / ${m.disk_total_gb} GB`;
+    document.getElementById('diskPercent').textContent = `${m.disk_percent}%`;
+
+    // Uptime
+    document.getElementById('statUptime').textContent = m.uptime;
+  } catch (e) {
+    console.error('Telemetry query error:', e);
   }
 }
 
@@ -247,8 +337,8 @@ function renderPanels() {
         <span class="panel-status-tag">Connected</span>
       </div>
       <div class="panel-footer-actions">
-        <button class="btn btn-ghost btn-sm" onclick="testPanel('${p.id}')">🔌 Test Inbounds</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePanel('${p.id}')">🗑 Delete</button>
+        <button class="btn btn-ghost btn-sm" onclick="testPanel('${p.id}')">🔌 ${t('btn_test') || 'Test'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePanel('${p.id}')">🗑 ${t('btn_delete') || 'Delete'}</button>
       </div>
     </div>
   `).join('');
@@ -297,7 +387,7 @@ async function savePanel() {
   try {
     await api('POST', '/api/panels', data);
     closeModal();
-    toast('Panel saved successfully! Click "Test Inbounds" to verify.');
+    toast('Panel saved successfully! Click "Test" to verify.');
     await loadPanels();
   } catch (e) {
     toast(e.message, false);
@@ -349,7 +439,6 @@ function isScheduleActiveNow(s) {
     const enMins = eh * 60 + em;
     const disMins = dh * 60 + dm;
 
-    // Use browser current time as proxy for view
     const now = new Date();
     const curMins = now.getHours() * 60 + now.getMinutes();
 
@@ -383,11 +472,11 @@ function renderSchedules() {
 
     let statusBadge = '';
     if (!s.enabled) {
-      statusBadge = '<span class="status-pill disabled">PAUSED</span>';
+      statusBadge = `<span class="status-pill disabled">${t('status_paused')}</span>`;
     } else if (isActiveWindow) {
-      statusBadge = '<span class="status-pill active">🟢 ACTIVE (Window Open)</span>';
+      statusBadge = `<span class="status-pill active">${t('status_active')}</span>`;
     } else {
-      statusBadge = '<span class="status-pill idle">⏸ IDLE (Outside Window)</span>';
+      statusBadge = `<span class="status-pill idle">${t('status_idle')}</span>`;
     }
 
     return `
@@ -419,10 +508,10 @@ function renderSchedules() {
         </td>
         <td>
           <div class="table-actions">
-            <button class="btn btn-edit btn-sm" onclick="showEditSchedule('${s.id}')" title="Edit Schedule">✏️ Edit</button>
-            <button class="btn btn-success btn-sm" onclick="runNow('${s.id}', 'enable')" title="Force ON right now">▶ ON</button>
-            <button class="btn btn-ghost btn-sm" onclick="runNow('${s.id}', 'disable')" title="Force OFF right now">⏹ OFF</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')" title="Delete Schedule">🗑 Delete</button>
+            <button class="btn btn-edit btn-sm" onclick="showEditSchedule('${s.id}')" title="Edit Schedule">✏️ ${t('btn_edit')}</button>
+            <button class="btn btn-success btn-sm" onclick="runNow('${s.id}', 'enable')" title="${t('on_now')}">▶ ON</button>
+            <button class="btn btn-ghost btn-sm" onclick="runNow('${s.id}', 'disable')" title="${t('off_now')}">⏹ OFF</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')" title="${t('btn_delete')}">🗑 ${t('btn_delete')}</button>
           </div>
         </td>
       </tr>
@@ -539,7 +628,7 @@ async function saveNewSchedule() {
   try {
     await api('POST', '/api/schedules', data);
     closeModal();
-    toast('Schedule created! Current window state checked and applied.');
+    toast('Schedule created! Current window state applied.');
     await loadSchedules();
     loadBackendLogs();
   } catch (e) {
@@ -755,7 +844,7 @@ async function saveTelegramSettings() {
   const portVal = parseInt(document.getElementById('setPort').value) || 8181;
 
   try {
-    const res = await api('POST', '/api/settings', {
+    await api('POST', '/api/settings', {
       port: portVal,
       telegram: tgData
     });
@@ -858,7 +947,7 @@ function renderUsers() {
         <td>
           <div class="table-actions">
             <button class="btn btn-ghost btn-sm" onclick="showChangePasswordModal('${u.id}', '${esc(u.username)}')">🔑 Password</button>
-            ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑 Delete</button>` : ''}
+            ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑 ${t('btn_delete')}</button>` : ''}
           </div>
         </td>
       </tr>
