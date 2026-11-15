@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>3X-UI Manager · داشبورد مدیریت</title>
+<title>3X-UI Manager · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css"/>
 </head>
@@ -20,21 +20,21 @@
   </div>
   <nav class="sidebar-nav">
     <a href="#" class="nav-item active" data-tab="panels">
-      <span class="nav-icon">🖥</span> پنل‌ها
+      <span class="nav-icon">🖥</span> Panels
     </a>
     <a href="#" class="nav-item" data-tab="schedules">
-      <span class="nav-icon">⏰</span> زمان‌بندی‌ها
+      <span class="nav-icon">⏰</span> Schedules
     </a>
     <a href="#" class="nav-item" data-tab="settings">
-      <span class="nav-icon">⚙️</span> تنظیمات پنل
+      <span class="nav-icon">⚙️</span> Settings
     </a>
     <a href="#" class="nav-item" data-tab="logs">
-      <span class="nav-icon">📋</span> لاگ‌ها
+      <span class="nav-icon">📋</span> Logs
     </a>
   </nav>
   <div class="sidebar-footer">
     <a href="/logout" class="nav-item logout-btn">
-      <span class="nav-icon">🚪</span> خروج
+      <span class="nav-icon">🚪</span> Logout
     </a>
   </div>
 </aside>
@@ -42,82 +42,81 @@
 <!-- Main Content -->
 <main class="main">
 
-  <!-- Header -->
   <header class="topbar">
-    <h1 class="page-title" id="pageTitle">مدیریت پنل‌ها</h1>
+    <h1 class="page-title" id="pageTitle">Panel Management</h1>
     <div class="topbar-actions">
       <span class="status-dot online"></span>
-      <span class="status-text">سیستم فعال است</span>
+      <span class="status-text">System Active</span>
     </div>
   </header>
 
   <!-- Tab: Panels -->
   <section class="tab-content active" id="tab-panels">
     <div class="section-header">
-      <h2>پنل‌های متصل شده</h2>
-      <button class="btn btn-primary" onclick="showAddPanel()">+ افزودن پنل جدید</button>
+      <h2>Connected Panels</h2>
+      <button class="btn btn-primary" onclick="showAddPanel()">+ Add Panel</button>
     </div>
     <div class="card-grid" id="panelsList">
-      <div class="empty-state">هنوز پنلی اضافه نشده است. روی «افزودن پنل جدید» کلیک کنید.</div>
+      <div class="empty-state">No panels added yet. Click "Add Panel" to start.</div>
     </div>
   </section>
 
   <!-- Tab: Schedules -->
   <section class="tab-content" id="tab-schedules">
     <div class="section-header">
-      <h2>زمان‌بندی اینباندها</h2>
-      <button class="btn btn-primary" onclick="showAddSchedule()">+ ساخت زمان‌بندی جدید</button>
+      <h2>Inbound Schedules</h2>
+      <button class="btn btn-primary" onclick="showAddSchedule()">+ Add Schedule</button>
     </div>
     <div class="table-wrap">
       <table class="data-table" id="schedulesTable">
         <thead>
           <tr>
-            <th>اینباند</th>
-            <th>پنل</th>
-            <th>ساعت روشن شدن</th>
-            <th>ساعت خاموش شدن</th>
-            <th>منطقه زمانی</th>
-            <th>وضعیت زمان‌بندی</th>
-            <th>عملیات</th>
+            <th>Inbound</th>
+            <th>Panel</th>
+            <th>Enable Time</th>
+            <th>Disable Time</th>
+            <th>Timezone</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="schedulesBody"></tbody>
       </table>
-      <div class="empty-state" id="schedulesEmpty">هیچ زمان‌بندی فعالی وجود ندارد.</div>
+      <div class="empty-state" id="schedulesEmpty">No schedules yet. Add one to automate inbound toggling.</div>
     </div>
   </section>
 
   <!-- Tab: Settings -->
   <section class="tab-content" id="tab-settings">
     <div class="section-header">
-      <h2>تنظیمات امنیتی و پورت پنل</h2>
+      <h2>Panel Settings</h2>
     </div>
     <div class="settings-card">
       <div class="form-group">
-        <label>نام کاربری ورود (Username)</label>
+        <label>Login Username</label>
         <input class="form-input" id="setAdminUser" type="text" placeholder="admin"/>
       </div>
       <div class="form-group">
-        <label>رمز عبور جدید (در صورت عدم تغییر خالی بگذارید)</label>
+        <label>New Password (leave empty to keep current)</label>
         <input class="form-input" id="setAdminPass" type="password" placeholder="••••••••"/>
       </div>
       <div class="form-group">
-        <label>پورت وب پنل (Web Port)</label>
+        <label>Web Panel Port</label>
         <input class="form-input" id="setPort" type="number" placeholder="8181"/>
-        <small style="color:var(--muted);margin-top:4px;display:block;">پس از تغییر پورت، دستور <code>systemctl restart xui-manager</code> را در سرور اجرا کنید.</small>
+        <small style="color:var(--muted);margin-top:4px;display:block;">After changing the port, run <code>systemctl restart xui-manager</code> on your server.</small>
       </div>
-      <button class="btn btn-primary" onclick="saveSettingsForm()">ذخیره تنظیمات</button>
+      <button class="btn btn-primary" onclick="saveSettingsForm()">Save Settings</button>
     </div>
   </section>
 
   <!-- Tab: Logs -->
   <section class="tab-content" id="tab-logs">
     <div class="section-header">
-      <h2>گزارشات و لاگ‌های سیستم</h2>
-      <button class="btn btn-ghost" onclick="clearLogs()">پاکسازی لاگ‌ها</button>
+      <h2>Activity Logs</h2>
+      <button class="btn btn-ghost" onclick="clearLogs()">Clear</button>
     </div>
     <div class="log-box" id="logBox">
-      <div class="log-entry">سیستم راه‌اندازی شد.</div>
+      <div class="log-entry">System initialized.</div>
     </div>
   </section>
 
@@ -127,7 +126,7 @@
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h3 id="modalTitle">افزودن پنل</h3>
+      <h3 id="modalTitle">Add Panel</h3>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>

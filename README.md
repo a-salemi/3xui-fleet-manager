@@ -1,51 +1,45 @@
 # ⚡ 3X-UI Inbound Manager
 
-یک پنل تحت وب مدرن، دارک و مینیمال برای زمان‌بندی هوشمند روشن و خاموش شدن اینباندهای پنل 3X-UI (ثنایی) از طریق REST API و توکن Bearer بدون نیاز به دسترسی مستقیم به دیتابیس.
+A sleek, dark-themed web dashboard to schedule and automate enabling/disabling 3X-UI inbounds via REST API with Bearer Token authentication — no direct database access needed.
 
----
-
-## 🚀 نصب سریع روی سرور اوبونتو (Ubuntu 22+)
-
-کافیه دستور تک‌خطی زیر رو در ترمینال سرور اجرا کنید:
+## 🚀 Quick Install (Ubuntu 22.04+)
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/a-salemi/3xui-inbound-manager/main/install.sh?v=$(date +%s))
+bash <(curl -Ls https://raw.githubusercontent.com/a-salemi/3xui-inbound-manager/main/install.sh)
 ```
 
-> **نکته هوشمند اسکریپت:** این نصاب در صورت بروز کندی یا اختلال در دانلود پکیج‌های پایتون از سرورهای بین‌المللی، به صورت خودکار و هوشمند به **میرورهای پرسرعت ایرانی (Runflare و Liara)** سوییچ می‌کند!
-
----
-
-## 🔑 اطلاعات ورود پیش‌فرض
-
-- **پورت وب:** `8181` (قابل دسترسی از طریق `http://YOUR_SERVER_IP:8181`)
-- **نام کاربری:** `admin`
-- **رمز عبور:** `asdf1234!!@@`
-
-*(تمامی این مقادیر از داخل خود پنل در تب **تنظیمات پنل** قابل تغییر هستند)*
-
----
-
-## ✨ امکانات و قابلیت‌ها
-
-- 🖥 **مدیریت چند پنل:** امکان اتصال چندین پنل 3X-UI مختلف با توکن API
-- ⏰ **زمان‌بندی هوشمند:** تعیین ساعت روشن شدن و خاموش شدن اینباندها (مناسب سرویس‌های شبانه مثل ۲ تا ۷ صبح)
-- ⚙️ **تنظیمات داخلی:** امکان تغییر نام کاربری، رمز عبور و پورت وب پنل مستقیم از محیط گرافیکی
-- ▶️ **کنترل دستی فوری:** دکمه‌های روشن/خاموش لحظه‌ای برای تست و فعال‌سازی فوری
-- 📋 **ثبت رویدادها (Logs):** مشاهده تمام فعالیت‌ها و لاگ‌های زمان‌بندی
-- 🎨 **طراحی Dark & Minimal:** رابط کاربری مدرن، راست‌چین و هماهنگ با موبایل و دسکتاپ
-
----
-
-## 🛠 دستورات کاربردی سرویس
+Or clone and install manually:
 
 ```bash
-# مشاهده وضعیت سرویس
-systemctl status xui-manager
+git clone https://github.com/a-salemi/3xui-inbound-manager.git /opt/xui-manager
+cd /opt/xui-manager && chmod +x install.sh && ./install.sh
+```
 
-# ری‌استارت سرویس (مثلاً پس از تغییر پورت)
-systemctl restart xui-manager
+> **Smart Mirror:** The installer automatically falls back to fast Iranian PyPI mirrors (Runflare / Liara) if the global server is slow or unreachable.
 
-# مشاهده لاگ‌های زنده
-journalctl -u xui-manager -f
+## 🔑 Default Credentials
+
+| Field | Value |
+|-------|-------|
+| URL | `http://YOUR_SERVER_IP:8181` |
+| Username | `admin` |
+| Password | `asdf1234!!@@` |
+
+All credentials and the web port can be changed from the **Settings** tab inside the panel.
+
+## ✨ Features
+
+- 🖥 **Multi-Panel Support** — Connect multiple 3X-UI instances with API tokens
+- ⏰ **Smart Scheduling** — Set enable/disable times for inbounds (e.g. nightly service 02:00–07:00)
+- ⚙️ **In-Panel Settings** — Change username, password, and web port from the UI
+- ▶️ **Manual Toggle** — Instant ON/OFF buttons for each inbound
+- 📋 **Activity Logs** — Track all scheduling events and actions
+- 🎨 **Dark Minimal UI** — Modern, responsive dark theme
+
+## 🛠 Service Commands
+
+```bash
+systemctl status xui-manager      # Check status
+systemctl restart xui-manager     # Restart (e.g. after port change)
+journalctl -u xui-manager -f      # Live logs
 ```

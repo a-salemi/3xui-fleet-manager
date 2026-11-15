@@ -21,20 +21,20 @@ body {
   color: var(--text);
   min-height: 100vh;
   display: flex;
-  direction: rtl;
+  direction: ltr;
 }
 
 /* ─── Sidebar ─────────────────────────────────────────────── */
 .sidebar {
-  width: 230px;
+  width: 220px;
   min-height: 100vh;
   background: var(--surface);
-  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 24px 16px;
   position: fixed;
-  right: 0;
+  left: 0;
   top: 0;
   z-index: 50;
 }
@@ -68,7 +68,7 @@ body {
 .logout-btn:hover { color: var(--danger) !important; }
 
 /* ─── Main ────────────────────────────────────────────────── */
-.main { margin-right: 230px; flex: 1; padding: 28px 36px; min-height: 100vh; }
+.main { margin-left: 220px; flex: 1; padding: 28px 36px; min-height: 100vh; }
 
 .topbar {
   display: flex; justify-content: space-between; align-items: center;
@@ -92,12 +92,17 @@ body {
 }
 .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
 .btn-primary:hover { opacity: .85; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
 .btn-danger { background: rgba(244,63,94,.1); color: var(--danger); border: 1px solid rgba(244,63,94,.2); }
 .btn-danger:hover { background: rgba(244,63,94,.2); }
 .btn-success { background: rgba(16,185,129,.1); color: var(--success); border: 1px solid rgba(16,185,129,.2); }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ─── Spinner ─────────────────────────────────────────────── */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ─── Cards ───────────────────────────────────────────────── */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -112,7 +117,7 @@ body {
 .panel-card:hover { border-color: rgba(108,99,255,.3); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
 .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
 .card-name { font-size: 15px; font-weight: 600; }
-.card-url { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; direction: ltr; text-align: right; }
+.card-url { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; }
 .card-badge {
   padding: 3px 10px; border-radius: 20px;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
@@ -125,8 +130,9 @@ body {
 .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th {
-  text-align: right; padding: 12px 16px;
+  text-align: left; padding: 12px 16px;
   font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
   border-bottom: 1px solid var(--border);
 }
 .data-table td {
@@ -145,12 +151,12 @@ body {
 .toggle.on { background: var(--accent); }
 .toggle::after {
   content: '';
-  position: absolute; top: 3px; right: 3px;
+  position: absolute; top: 3px; left: 3px;
   width: 16px; height: 16px;
   background: #fff; border-radius: 50%;
   transition: transform .2s;
 }
-.toggle.on::after { transform: translateX(-18px); }
+.toggle.on::after { transform: translateX(18px); }
 
 /* ─── Modal ───────────────────────────────────────────────── */
 .modal-overlay {
@@ -181,8 +187,9 @@ body {
 /* ─── Form ────────────────────────────────────────────────── */
 .form-group { margin-bottom: 16px; }
 .form-group label {
-  display: block; font-size: 12px; font-weight: 600;
+  display: block; font-size: 11px; font-weight: 600;
   color: var(--muted); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: .5px;
 }
 .form-input {
   width: 100%; padding: 10px 14px;
@@ -190,11 +197,10 @@ body {
   border-radius: 8px; color: var(--text);
   font-size: 13px; font-family: inherit;
   outline: none; transition: border-color .2s, box-shadow .2s;
-  direction: ltr;
 }
 .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,.12); }
 .form-input option { background: var(--bg); color: var(--text); }
-select.form-input { cursor: pointer; direction: rtl; }
+select.form-input { cursor: pointer; }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
@@ -209,14 +215,13 @@ select.form-input { cursor: pointer; direction: rtl; }
   max-height: 500px; overflow-y: auto;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 12px; line-height: 1.8;
-  direction: ltr; text-align: left;
 }
 .log-entry { color: var(--muted); padding: 2px 0; }
 .log-entry.success { color: var(--success); }
 .log-entry.error { color: var(--danger); }
 
 /* ─── Toast ───────────────────────────────────────────────── */
-.toast-container { position: fixed; bottom: 24px; left: 24px; z-index: 200; display: flex; flex-direction: column-reverse; gap: 8px; }
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column-reverse; gap: 8px; }
 .toast {
   padding: 12px 20px; border-radius: 10px;
   font-size: 13px; font-weight: 500;
@@ -235,7 +240,7 @@ select.form-input { cursor: pointer; direction: rtl; }
 @media (max-width: 768px) {
   .sidebar { width: 60px; padding: 16px 8px; }
   .sidebar .logo-text, .sidebar .logo-sub, .sidebar .nav-item span:not(.nav-icon) { display: none; }
-  .main { margin-right: 60px; padding: 20px 16px; }
+  .main { margin-left: 60px; padding: 20px 16px; }
   .card-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
 }
