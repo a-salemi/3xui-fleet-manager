@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Initialize Language
+  if (typeof setLanguage === 'function') {
+    setLanguage(currentLang);
+  }
+
   // Initial Load
   loadAllData();
 

@@ -86,8 +86,18 @@
         <p class="view-subtitle" id="viewSubtitle">Automated time-based inbound enabling and disabling</p>
       </div>
       <div class="header-actions" id="topActions">
+        <div class="lang-picker-container">
+          <span class="lang-globe">🌐</span>
+          <select id="langSelector" class="lang-select" onchange="setLanguage(this.value)">
+            <option value="en">English (US)</option>
+            <option value="fa">فارسی (Persian)</option>
+            <option value="ru">Русский (Russian)</option>
+            <option value="tr">Türkçe (Turkish)</option>
+            <option value="zh">简体中文 (Chinese)</option>
+          </select>
+        </div>
         <button class="btn btn-primary glow-btn" onclick="showAddSchedule()">
-          <span class="btn-icon">+</span> New Schedule
+          <span class="btn-icon">+</span> <span data-i18n="btn_new_schedule">New Schedule</span>
         </button>
       </div>
     </header>
@@ -351,6 +361,7 @@
 <!-- Notification Toast Container -->
 <div class="toast-stack" id="toastStack"></div>
 
-<script src="/static/js/app.js?v=4.0"></script>
+<script src="/static/js/i18n.js?v=4.1"></script>
+<script src="/static/js/app.js?v=4.1"></script>
 </body>
 </html>

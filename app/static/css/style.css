@@ -242,11 +242,99 @@ body {
   display: none;
 }
 
-.top-header {
+.header-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 28px;
+  align-items: center;
+  gap: 12px;
+}
+
+.lang-picker-container {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  height: 38px;
+  transition: var(--transition);
+}
+
+.lang-picker-container:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lang-globe {
+  font-size: 14px;
+  margin-right: 6px;
+}
+
+.lang-select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.lang-select option {
+  background: #0f121d;
+  color: #fff;
+}
+
+/* ─── RTL Support (For Persian) ─────────────────────────────────────────────── */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .sidebar {
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid var(--border-color);
+}
+
+[dir="rtl"] .main-content {
+  margin-left: 0;
+  margin-right: 260px;
+}
+
+[dir="rtl"] .modern-table th,
+[dir="rtl"] .modern-table td {
+  text-align: right;
+}
+
+[dir="rtl"] .table-actions {
+  justify-content: flex-start;
+}
+
+[dir="rtl"] .toolbar-search input {
+  padding: 9px 38px 9px 14px;
+}
+
+[dir="rtl"] .search-icon {
+  left: auto;
+  right: 12px;
+}
+
+[dir="rtl"] .lang-globe {
+  margin-right: 0;
+  margin-left: 6px;
+}
+
+@media (max-width: 868px) {
+  [dir="rtl"] .sidebar {
+    transform: translateX(100%);
+  }
+  [dir="rtl"] .sidebar.open {
+    transform: translateX(0);
+  }
+  [dir="rtl"] .main-content {
+    margin-right: 0;
+  }
 }
 
 .view-title {
