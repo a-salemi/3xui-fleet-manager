@@ -2,7 +2,10 @@
 let panels = [];
 let schedules = [];
 let backendLogs = [];
+let allUsers = [];
+let currentUser = { username: 'Admin', role: 'admin' };
 let currentTab = 'schedules';
+let telegramEnabled = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Navigation Tabs
@@ -25,11 +28,29 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadAllData() {
+  await loadMe();
   await loadPanels();
   await loadSchedules();
   await loadBackendLogs();
-  await loadSettings();
+  if (currentUser.role === 'admin') {
+    await loadSettings();
+    await loadUsers();
+  }
   updateMetrics();
+}
+
+async function loadMe() {
+  try {
+    currentUser = await api('GET', '/api/me');
+    document.getElementById('currentUserDisplay').textContent = currentUser.username;
+    document.getElementById('currentUserRole').textContent = currentUser.role.toUpperCase() + ' ROLE';
+    if (currentUser.role !== 'admin') {
+      const uSec = document.getElementById('adminUsersSection');
+      if (uSec) uSec.style.display = 'none';
+    }
+  } catch (e) {
+    console.error('Failed to load current user profile:', e);
+  }
 }
 
 // ─── Navigation & Views ──────────────────────────────────────────────────────
@@ -690,46 +711,251 @@ async function clearBackendLogs() {
   }
 }
 
-// ─── 4. SETTINGS VIEW ────────────────────────────────────────────────────────
+// ─── 4. SETTINGS & TELEGRAM INTEGRATION ──────────────────────────────────────
 async function loadSettings() {
   try {
     const s = await api('GET', '/api/settings');
     if (s) {
-      document.getElementById('setAdminUser').value = s.username || 'admin';
       document.getElementById('setPort').value = s.port || 8181;
+      const tg = s.telegram || {};
+      telegramEnabled = !!tg.enabled;
+      document.getElementById('tgEnabledToggle').classList.toggle('on', telegramEnabled);
+      document.getElementById('tgToken').value = tg.bot_token || '';
+      document.getElementById('tgChatId').value = tg.chat_id || '';
+      document.getElementById('tgProxy').value = tg.socks_proxy || '';
+      document.getElementById('tgApiServer').value = tg.api_server || '';
     }
   } catch (e) {
-    console.error(e);
+    console.error('Failed to load settings:', e);
   }
 }
 
-async function saveSettingsForm() {
-  const user = document.getElementById('setAdminUser').value.trim();
-  const pass = document.getElementById('setAdminPass').value;
-  const port = parseInt(document.getElementById('setPort').value);
+function toggleTelegramState() {
+  telegramEnabled = !telegramEnabled;
+  document.getElementById('tgEnabledToggle').classList.toggle('on', telegramEnabled);
+}
 
-  if (!user) {
-    toast('Username cannot be empty', false);
-    return;
-  }
-  if (!port || port < 1 || port > 65535) {
-    toast('Port must be between 1 and 65535', false);
-    return;
-  }
+async function saveTelegramSettings() {
+  const btn = document.getElementById('btnSaveTelegram');
+  setBtnLoading(btn, true, 'Saving...');
+
+  const tgData = {
+    enabled: telegramEnabled,
+    bot_token: document.getElementById('tgToken').value.trim(),
+    chat_id: document.getElementById('tgChatId').value.trim(),
+    socks_proxy: document.getElementById('tgProxy').value.trim(),
+    api_server: document.getElementById('tgApiServer').value.trim()
+  };
+
+  const portVal = parseInt(document.getElementById('setPort').value) || 8181;
 
   try {
     const res = await api('POST', '/api/settings', {
-      username: user,
-      password: pass || null,
-      port: port
+      port: portVal,
+      telegram: tgData
     });
-    toast(res.message);
+    toast('Telegram settings saved successfully!');
+  } catch (e) {
+    toast('Error saving settings: ' + e.message, false);
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function testTelegramChannel() {
+  const btn = document.getElementById('btnTestTelegram');
+  const token = document.getElementById('tgToken').value.trim();
+  const chatId = document.getElementById('tgChatId').value.trim();
+  const proxy = document.getElementById('tgProxy').value.trim();
+  const apiServer = document.getElementById('tgApiServer').value.trim();
+
+  if (!token || !chatId) {
+    toast('Please enter Bot Token and Chat ID first', false);
+    return;
+  }
+
+  setBtnLoading(btn, true, 'Sending Test...');
+  try {
+    const res = await api('POST', '/api/telegram/test', {
+      bot_token: token,
+      chat_id: chatId,
+      socks_proxy: proxy,
+      api_server: apiServer
+    });
+    toast('✓ ' + (res.message || 'Test message sent! Check your Telegram.'));
+  } catch (e) {
+    toast('Telegram test failed: ' + e.message, false);
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function savePortSetting() {
+  const portVal = parseInt(document.getElementById('setPort').value);
+  if (!portVal || portVal < 1 || portVal > 65535) {
+    toast('Invalid port number (1-65535)', false);
+    return;
+  }
+
+  const tgData = {
+    enabled: telegramEnabled,
+    bot_token: document.getElementById('tgToken').value.trim(),
+    chat_id: document.getElementById('tgChatId').value.trim(),
+    socks_proxy: document.getElementById('tgProxy').value.trim(),
+    api_server: document.getElementById('tgApiServer').value.trim()
+  };
+
+  try {
+    await api('POST', '/api/settings', {
+      port: portVal,
+      telegram: tgData
+    });
+    toast('Port saved! Run "systemctl restart xui-manager" to activate new port.');
   } catch (e) {
     toast(e.message, false);
   }
 }
 
-// ─── 5. METRICS SUMMARY ──────────────────────────────────────────────────────
+// ─── 5. USER MANAGEMENT (MULTI-USER ACCESS CONTROL) ──────────────────────────
+async function loadUsers() {
+  if (currentUser.role !== 'admin') return;
+  try {
+    allUsers = await api('GET', '/api/users');
+    renderUsers();
+  } catch (e) {
+    console.error('Error loading users:', e);
+  }
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = allUsers.map(u => {
+    let roleClass = 'btn-ghost';
+    if (u.role === 'admin') roleClass = 'btn-primary';
+    else if (u.role === 'operator') roleClass = 'btn-edit';
+
+    const isSelf = (u.username === currentUser.username);
+
+    return `
+      <tr>
+        <td>
+          <strong>${esc(u.username)}</strong>
+          ${isSelf ? '<span style="font-size:11px;color:var(--accent-cyan);margin-left:6px;">(You)</span>' : ''}
+        </td>
+        <td>
+          <span class="btn ${roleClass} btn-sm" style="cursor:default;padding:2px 8px;font-size:11px;">
+            ${esc(u.role.toUpperCase())}
+          </span>
+        </td>
+        <td style="color:var(--text-muted);font-size:12px;">${esc(u.created_at || '—')}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-ghost btn-sm" onclick="showChangePasswordModal('${u.id}', '${esc(u.username)}')">🔑 Password</button>
+            ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑 Delete</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function showAddUserModal() {
+  openModal('Add System User', 'NEW ACCOUNT', `
+    <div class="form-field">
+      <label>Username</label>
+      <input type="text" class="form-input" id="newUsername" placeholder="e.g. operator1"/>
+    </div>
+    <div class="form-field">
+      <label>Password</label>
+      <input type="password" class="form-input" id="newPassword" placeholder="Minimum 4 characters"/>
+    </div>
+    <div class="form-field">
+      <label>Access Role</label>
+      <select class="form-input" id="newRole">
+        <option value="operator" selected>Operator (Can manage schedules, inbounds & manual toggles)</option>
+        <option value="admin">Administrator (Full access, user & port management)</option>
+        <option value="viewer">Viewer (Read-only observation & logs)</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="btnCreateUser" style="width:100%;margin-top:10px;" onclick="createUser()">
+      Create User Account
+    </button>
+  `);
+}
+
+async function createUser() {
+  const btn = document.getElementById('btnCreateUser');
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role = document.getElementById('newRole').value;
+
+  if (!username || !password) {
+    toast('Please fill username and password', false);
+    return;
+  }
+
+  setBtnLoading(btn, true, 'Creating...');
+  try {
+    await api('POST', '/api/users', { username, password, role });
+    closeModal();
+    toast(`User '${username}' created successfully!`);
+    await loadUsers();
+  } catch (e) {
+    toast(e.message, false);
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+function showChangePasswordModal(userId, username) {
+  openModal('Change Password', 'SECURITY', `
+    <div class="form-field">
+      <label>Target User</label>
+      <input type="text" class="form-input" value="${username}" disabled/>
+    </div>
+    <div class="form-field">
+      <label>New Password</label>
+      <input type="password" class="form-input" id="editPassword" placeholder="Enter new password"/>
+    </div>
+    <button class="btn btn-primary" id="btnChangePass" style="width:100%;margin-top:10px;" onclick="updateUserPassword('${userId}')">
+      Update Password
+    </button>
+  `);
+}
+
+async function updateUserPassword(userId) {
+  const btn = document.getElementById('btnChangePass');
+  const pass = document.getElementById('editPassword').value;
+  if (!pass || pass.length < 4) {
+    toast('Password must be at least 4 characters', false);
+    return;
+  }
+
+  setBtnLoading(btn, true, 'Updating...');
+  try {
+    await api('PUT', `/api/users/${userId}`, { password: pass });
+    closeModal();
+    toast('Password updated successfully!');
+  } catch (e) {
+    toast(e.message, false);
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function deleteUser(userId) {
+  try {
+    await api('DELETE', `/api/users/${userId}`);
+    toast('User deleted successfully');
+    await loadUsers();
+  } catch (e) {
+    toast(e.message, false);
+  }
+}
+
+// ─── 6. METRICS SUMMARY ──────────────────────────────────────────────────────
 function updateMetrics() {
   const activeCount = schedules.filter(s => s.enabled).length;
   document.getElementById('statActiveSchedules').textContent = activeCount;

@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 
 class PanelConfig(BaseModel):
     id: str
     name: str
-    url: str  # e.g. https://127.0.0.1:2087/shabgard
+    url: str
     token: str
     path_prefix: str = "/panel"
 
@@ -15,8 +15,8 @@ class ScheduleEntry(BaseModel):
     panel_id: str
     inbound_id: int
     inbound_remark: str
-    enable_time: str   # "HH:MM" (24-hour format)
-    disable_time: str  # "HH:MM" (24-hour format)
+    enable_time: str
+    disable_time: str
     enabled: bool = True
     timezone: str = "Asia/Tehran"
 
@@ -52,7 +52,32 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class SettingsUpdate(BaseModel):
-    username: str
-    password: Optional[str] = None
+class TelegramSettings(BaseModel):
+    enabled: bool = False
+    bot_token: str = ""
+    chat_id: str = ""
+    socks_proxy: Optional[str] = ""
+    api_server: Optional[str] = ""
+
+
+class TelegramTestRequest(BaseModel):
+    bot_token: str
+    chat_id: str
+    socks_proxy: Optional[str] = ""
+    api_server: Optional[str] = ""
+
+
+class GeneralSettingsUpdate(BaseModel):
     port: int = 8181
+    telegram: TelegramSettings
+
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "operator"
+
+
+class UserUpdate(BaseModel):
+    password: Optional[str] = None
+    role: Optional[str] = None

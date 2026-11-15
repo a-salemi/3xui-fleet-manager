@@ -66,8 +66,8 @@
       <div class="server-status">
         <span class="status-beacon"></span>
         <div class="status-meta">
-          <span class="status-label">Engine Online</span>
-          <span class="status-sub">24/7 Auto Sync</span>
+          <span class="status-label" id="currentUserDisplay">Admin</span>
+          <span class="status-sub" id="currentUserRole">ADMIN ROLE</span>
         </div>
       </div>
       <a href="/logout" class="btn-logout" title="Sign Out">
@@ -221,40 +221,114 @@
       </div>
     </section>
 
-    <!-- TAB 4: Settings -->
+    <!-- TAB 4: Settings & Integrations -->
     <section class="tab-pane" id="tab-settings">
-      <div class="content-card settings-wrapper">
+      
+      <!-- Card A: Telegram Bot Alerts -->
+      <div class="content-card" style="margin-bottom:24px;">
         <div class="card-toolbar">
           <div class="toolbar-info">
-            <h3>Panel Security & Web Port</h3>
-            <p>Update manager authentication and custom listening port.</p>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">🤖</span>
+              <h3>Telegram Bot Notifications</h3>
+            </div>
+            <p>Receive real-time alerts whenever an inbound is enabled, disabled, or if an error occurs.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Enable Bot:</span>
+            <span class="toggle-switch" id="tgEnabledToggle" onclick="toggleTelegramState()"></span>
           </div>
         </div>
 
-        <div class="settings-form-grid">
-          <div class="input-field">
-            <label>Admin Username</label>
-            <input type="text" class="form-input" id="setAdminUser" placeholder="admin"/>
-            <span class="field-hint">Used to login to this manager dashboard.</span>
+        <div style="padding:24px;">
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label>Telegram Bot Token</label>
+              <input type="text" class="form-input" id="tgToken" placeholder="e.g. 123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"/>
+              <span class="field-hint">Obtained from @BotFather in Telegram.</span>
+            </div>
+
+            <div class="form-field">
+              <label>Chat ID / Channel ID</label>
+              <input type="text" class="form-input" id="tgChatId" placeholder="e.g. 123456789 or -1001234567890"/>
+              <span class="field-hint">Your numeric Telegram User ID or Group/Channel ID.</span>
+            </div>
           </div>
 
-          <div class="input-field">
-            <label>New Password</label>
-            <input type="password" class="form-input" id="setAdminPass" placeholder="Leave blank to keep unchanged"/>
-            <span class="field-hint">Choose a strong password to protect your server.</span>
+          <div class="form-grid-2" style="margin-top:14px;">
+            <div class="form-field">
+              <label>SOCKS5 Proxy (Optional)</label>
+              <input type="text" class="form-input" id="tgProxy" placeholder="socks5://Q0BXgUEGb5:BvdlunejoA@94.183.153.53:80"/>
+              <span class="field-hint">Enables SOCKS5 proxy to connect to Telegram (e.g. for filtered servers).</span>
+            </div>
+
+            <div class="form-field">
+              <label>Custom Telegram API Server (Optional)</label>
+              <input type="text" class="form-input" id="tgApiServer" placeholder="https://api.example.com"/>
+              <span class="field-hint">Custom Bot API endpoint / reverse proxy. Leave empty to use official API.</span>
+            </div>
           </div>
 
-          <div class="input-field">
-            <label>Web Dashboard Port</label>
-            <input type="number" class="form-input" id="setPort" placeholder="8181" min="1" max="65535"/>
-            <span class="field-hint">Default is <code>8181</code>. Run <code>systemctl restart xui-manager</code> after changing.</span>
-          </div>
-
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="saveSettingsForm()">Save Settings</button>
+          <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="btnSaveTelegram" onclick="saveTelegramSettings()">Save Telegram Settings</button>
+            <button class="btn btn-ghost" id="btnTestTelegram" onclick="testTelegramChannel()">🔔 Send Test Notification</button>
           </div>
         </div>
       </div>
+
+      <!-- Card B: User Management (Multi-User & Roles) -->
+      <div class="content-card" id="adminUsersSection" style="margin-bottom:24px;">
+        <div class="card-toolbar">
+          <div class="toolbar-info">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">👥</span>
+              <h3>User Management & Access Control</h3>
+            </div>
+            <p>Manage accounts and roles: <b>Admin</b> (full control), <b>Operator</b> (schedules & triggers), <b>Viewer</b> (read-only).</p>
+          </div>
+          <div>
+            <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">+ Add New User</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Access Role</th>
+                <th>Created At</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Rendered via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card C: System Web Port -->
+      <div class="content-card">
+        <div class="card-toolbar">
+          <div class="toolbar-info">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">🌐</span>
+              <h3>Web Dashboard Port</h3>
+            </div>
+            <p>Customize the manager listening port (default is <code>8181</code>).</p>
+          </div>
+        </div>
+        <div style="padding:24px;max-width:420px;">
+          <div class="form-field">
+            <label>Port Number</label>
+            <input type="number" class="form-input" id="setPort" placeholder="8181" min="1" max="65535"/>
+            <span class="field-hint">After changing, run <code>systemctl restart xui-manager</code> on your server.</span>
+          </div>
+          <button class="btn btn-primary" onclick="savePortSetting()">Save Port</button>
+        </div>
+      </div>
+
     </section>
 
   </main>

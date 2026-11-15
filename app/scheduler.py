@@ -1,10 +1,12 @@
 import logging
+import asyncio
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app import storage
 from app.xui_client import XUIClient
+from app.telegram import send_telegram_alert
 
 logger = logging.getLogger("scheduler")
 scheduler = AsyncIOScheduler(timezone="UTC")
@@ -15,11 +17,6 @@ def _make_job_id(schedule_id: str, action: str) -> str:
 
 
 def is_time_in_range(enable_time: str, disable_time: str, tz_name: str = "Asia/Tehran") -> bool:
-    """
-    Check if current time in the specified timezone is within [enable_time, disable_time).
-    Properly handles both regular intervals (e.g. 02:00 - 07:00) and
-    overnight intervals spanning midnight (e.g. 23:00 - 06:00).
-    """
     try:
         tz = ZoneInfo(tz_name)
     except Exception:
@@ -41,10 +38,8 @@ def is_time_in_range(enable_time: str, disable_time: str, tz_name: str = "Asia/T
         return False
 
     if en_mins < dis_mins:
-        # Standard day range, e.g. 02:00 to 07:00 or 10:00 to 18:00
         return en_mins <= cur_mins < dis_mins
     else:
-        # Overnight range, e.g. 22:00 to 06:00
         return cur_mins >= en_mins or cur_mins < dis_mins
 
 
@@ -65,25 +60,42 @@ async def _run_action(schedule_id: str, action: str, is_sync: bool = False):
     try:
         await client.set_inbound_enabled(schedule.inbound_id, target_enable)
         status_text = "ENABLED 🟢" if target_enable else "DISABLED 🔴"
-        context = "Auto-Synced (Initial Window Check)" if is_sync else "Scheduled Cron Trigger"
+        context = "Initial Sync" if is_sync else "Cron Trigger"
         details = (
             f"[{context}] Inbound successfully set to {status_text}. "
             f"Active window: {schedule.enable_time} - {schedule.disable_time} ({schedule.timezone})"
         )
         logger.info(f"{panel.name} | {schedule.inbound_remark} -> {status_text}")
         storage.add_log(panel.name, schedule.inbound_remark, action, "SUCCESS", details)
+
+        # Telegram Notification Alert
+        tg_icon = "🟢" if target_enable else "🔴"
+        action_title = "ENABLED" if target_enable else "DISABLED"
+        tg_html = (
+            f"{tg_icon} <b>3X-UI Inbound {action_title}</b>\n\n"
+            f"🖥 <b>Panel:</b> <code>{panel.name}</code>\n"
+            f"📡 <b>Inbound:</b> <code>{schedule.inbound_remark}</code> (#{schedule.inbound_id})\n"
+            f"⏰ <b>Window:</b> <code>{schedule.enable_time} → {schedule.disable_time}</code> ({schedule.timezone})\n"
+            f"⚡ <b>Action:</b> {context}"
+        )
+        asyncio.create_task(send_telegram_alert(tg_html))
+
     except Exception as e:
         err_msg = f"Failed to {action} inbound {schedule.inbound_id}: {str(e)}"
         logger.error(err_msg)
         storage.add_log(panel.name, schedule.inbound_remark, action, "FAILED", err_msg)
 
+        # Telegram Failure Alert
+        tg_fail = (
+            f"⚠️ <b>3X-UI Automation FAILED!</b>\n\n"
+            f"🖥 <b>Panel:</b> <code>{panel.name}</code>\n"
+            f"📡 <b>Inbound:</b> <code>{schedule.inbound_remark}</code> (#{schedule.inbound_id})\n"
+            f"❌ <b>Error:</b> <code>{str(e)}</code>"
+        )
+        asyncio.create_task(send_telegram_alert(tg_fail))
+
 
 async def sync_schedule_state(schedule_id: str):
-    """
-    Checks if current time is within schedule window and applies state immediately.
-    Solves the problem where a schedule added at 12:49 PM for 02:00-07:00 would stay ON
-    until 07:00 next day.
-    """
     schedule = storage.get_schedule(schedule_id)
     if not schedule or not schedule.enabled:
         return
@@ -107,7 +119,6 @@ def register_schedule(schedule_id: str):
     if not schedule.enabled:
         return
 
-    # 1. Job to Turn ON
     scheduler.add_job(
         _run_action,
         trigger=_parse_cron(schedule.enable_time, schedule.timezone),
@@ -117,7 +128,6 @@ def register_schedule(schedule_id: str):
         misfire_grace_time=180,
     )
 
-    # 2. Job to Turn OFF
     scheduler.add_job(
         _run_action,
         trigger=_parse_cron(schedule.disable_time, schedule.timezone),
@@ -145,7 +155,6 @@ async def reload_all_schedules_async():
     for s in schedules:
         register_schedule(s.id)
         if s.enabled:
-            # Sync each active schedule to ensure inbounds match current time window
             try:
                 await sync_schedule_state(s.id)
             except Exception as e:
