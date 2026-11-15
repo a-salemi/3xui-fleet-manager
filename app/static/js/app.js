@@ -181,9 +181,9 @@ function renderSchedules() {
       <td>${esc(pname)}</td><td><code>${s.enable_time}</code></td><td><code>${s.disable_time}</code></td><td>${esc(s.timezone)}</td>
       <td><span class="toggle ${s.enabled?'on':''}" onclick="toggleSchedule('${s.id}')"></span></td>
       <td>
-        <button class="btn btn-success btn-sm" onclick="runNow('${s.id}','enable')">▶ ON</button>
-        <button class="btn btn-danger btn-sm" onclick="runNow('${s.id}','disable')">⏸ OFF</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑</button>
+        <button class="btn btn-success btn-sm" onclick="runNow('${s.id}','enable')" title="Turn ON now">▶ ON</button>
+        <button class="btn btn-ghost btn-sm" onclick="runNow('${s.id}','disable')" title="Turn OFF now">⏹ OFF</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')" title="Delete Schedule">🗑 Delete</button>
       </td></tr>`;
   }).join('');
 }
@@ -229,9 +229,14 @@ async function toggleSchedule(id) {
   catch (e) { toast(e.message, false); }
 }
 async function deleteSchedule(id) {
-  if (!confirm('Delete this schedule?')) return;
-  try { await api('DELETE','/api/schedules/'+id); toast('Schedule deleted'); loadSchedules(); }
-  catch (e) { toast(e.message, false); }
+  try {
+    await api('DELETE', '/api/schedules/' + id);
+    toast('Schedule deleted successfully');
+    addLog('Schedule deleted', '');
+    loadSchedules();
+  } catch (e) {
+    toast('Delete failed: ' + e.message, false);
+  }
 }
 async function runNow(id, action) {
   try { await api('POST','/api/schedules/'+id+'/run/'+action); toast('Inbound '+action+'d manually!'); addLog('Manual '+action+' executed','success'); }

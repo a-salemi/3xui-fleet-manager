@@ -86,8 +86,7 @@ def save_schedule(schedule: ScheduleEntry):
 
 def delete_schedule(schedule_id: str) -> bool:
     schedules = _load_json(SCHEDULES_FILE)
-    new = [s for s in schedules if s["id"] != schedule_id]
-    if len(new) == len(schedules):
-        return False
+    target_id = str(schedule_id).strip()
+    new = [s for s in schedules if str(s.get("id")).strip() != target_id]
     _save_json(SCHEDULES_FILE, new)
     return True
