@@ -64,9 +64,20 @@ const translations = {
     port_title: "Web Dashboard Port",
     port_sub: "Customize the manager listening port (default is 8181).",
     port_save: "Save Port",
+    port_label: "Port Number",
+    port_hint: "After changing, run systemctl restart xui-manager on your server.",
     search_ph: "Filter by inbound or panel...",
     on_now: "Turn ON now",
-    off_now: "Turn OFF now"
+    off_now: "Turn OFF now",
+    sub_overview: "Live hardware telemetry and automated service statuses",
+    sub_schedules: "Automatic timer rules for enabling and disabling inbounds",
+    sub_panels: "Manage token authenticated 3X-UI instances",
+    sub_logs: "Audit trail of execution events, automatic synchronizations, and manual triggers",
+    sub_settings: "Telegram bot alerts, multi-user accounts, and network port configuration",
+    lang_select_title: "SELECT LANGUAGE",
+    loader_sub: "Loading system telemetry & schedules...",
+    th_action: "Action",
+    tg_status_label: "Bot Alerts:"
   },
   fa: {
     nav_overview: "داشبورد و وضعیت سرور",
@@ -132,9 +143,20 @@ const translations = {
     port_title: "پورت وب داشبورد",
     port_sub: "تغییر پورت شنود وب پنل (پیش‌فرض ۸۱۸۱ است).",
     port_save: "ذخیره پورت",
+    port_label: "شماره پورت",
+    port_hint: "پس از تغییر، دستور systemctl restart xui-manager را در سرور اجرا کنید.",
     search_ph: "جستجو در اینباندها یا پنل‌ها...",
     on_now: "روشن کردن فوری",
-    off_now: "خاموش کردن فوری"
+    off_now: "خاموش کردن فوری",
+    sub_overview: "وضعیت لحظه‌ای سخت‌افزار سرور و سرویس‌های خودکار",
+    sub_schedules: "قوانین زمان‌بندی خودکار برای روشن و خاموش کردن اینباندها",
+    sub_panels: "مدیریت پنل‌های متصل 3X-UI با توکن احراز هویت Bearer",
+    sub_logs: "تاریخچه دقیق وقایع اجرایی، همگام‌سازی‌های خودکار و تغییرات دستی",
+    sub_settings: "تنظیمات ربات تلگرام، مدیریت کاربران چندگانه و پورت وب پنل",
+    lang_select_title: "انتخاب زبان",
+    loader_sub: "در حال بارگذاری اطلاعات سیستم و زمان‌بندی‌ها...",
+    th_action: "عملیات",
+    tg_status_label: "ارسال اعلان‌ها:"
   },
   ru: {
     nav_overview: "Обзор системы",
@@ -200,9 +222,20 @@ const translations = {
     port_title: "Порт веб-панели",
     port_sub: "Настройка порта менеджера (по умолчанию 8181).",
     port_save: "Сохранить порт",
+    port_label: "Номер порта",
+    port_hint: "После изменения выполните systemctl restart xui-manager на сервере.",
     search_ph: "Поиск по инбаунду или панели...",
     on_now: "Включить сейчас",
-    off_now: "Выключить сейчас"
+    off_now: "Выключить сейчас",
+    sub_overview: "Телеметрия оборудования сервера в реальном времени",
+    sub_schedules: "Автоматические правила включения и отключения инбаундов",
+    sub_panels: "Управление подключенными панелями 3X-UI по API токену",
+    sub_logs: "История выполнения событий, синхронизации и ручных триггеров",
+    sub_settings: "Уведомления Telegram, управление пользователями и порт веб-панели",
+    lang_select_title: "ВЫБЕРИТЕ ЯЗЫК",
+    loader_sub: "Загрузка телеметрии и расписаний...",
+    th_action: "Действие",
+    tg_status_label: "Оповещения:"
   },
   tr: {
     nav_overview: "Genel Bakış",
@@ -268,9 +301,20 @@ const translations = {
     port_title: "Web Yönetim Portu",
     port_sub: "Yönetim paneli portunu özelleştirin (varsayılan 8181).",
     port_save: "Portu Kaydet",
+    port_label: "Port Numarası",
+    port_hint: "Değiştirdikten sonra sunucuda systemctl restart xui-manager komutunu çalıştırın.",
     search_ph: "Inbound veya panel ara...",
     on_now: "Şimdi Aç",
-    off_now: "Şimdi Kapat"
+    off_now: "Şimdi Kapat",
+    sub_overview: "Canlı donanım telemetrisi ve otomatik servis durumları",
+    sub_schedules: "Inbound servislerini otomatik açıp kapatan zamanlama kuralları",
+    sub_panels: "API Bearer anahtarı ile bağlı 3X-UI panellerini yönetin",
+    sub_logs: "Otomatik senkronizasyon, işlem geçmişi ve manuel tetikleme kayıtları",
+    sub_settings: "Telegram bot bildirimleri, çoklu kullanıcı ve port yapılandırması",
+    lang_select_title: "DİL SEÇİN",
+    loader_sub: "Sistem telemetrisi ve zamanlamalar yükleniyor...",
+    th_action: "İşlem",
+    tg_status_label: "Bot Bildirimleri:"
   },
   zh: {
     nav_overview: "概览大盘",
@@ -336,13 +380,32 @@ const translations = {
     port_title: "Web 管理面板端口",
     port_sub: "自定义面板监听端口 (默认 8181)。",
     port_save: "保存端口",
+    port_label: "端口号",
+    port_hint: "修改后，请在服务器执行 systemctl restart xui-manager 重启服务。",
     search_ph: "过滤入站或面板...",
     on_now: "立即开启",
-    off_now: "立即关闭"
+    off_now: "立即关闭",
+    sub_overview: "实时硬件性能监测与自动化服务运行状态",
+    sub_schedules: "自动启用与停用入站连接的定时策略规则",
+    sub_panels: "管理基于 Bearer Token 鉴权的 3X-UI 节点实例",
+    sub_logs: "自动化调度、同步事件与手动触发的完整审计日志",
+    sub_settings: "Telegram 机器人通知、多用户权限与服务端口设置",
+    lang_select_title: "选择语言",
+    loader_sub: "正在加载系统性能与计划数据...",
+    th_action: "动作",
+    tg_status_label: "机器人告警:"
   }
 };
 
 let currentLang = localStorage.getItem('xui_lang') || 'en';
+
+const LANG_METADATA = {
+  en: { label: 'English (US)', code: 'EN', flag: '🇺🇸' },
+  fa: { label: 'فارسی (FA)', code: 'FA', flag: '🇮🇷' },
+  ru: { label: 'Русский (RU)', code: 'RU', flag: '🇷🇺' },
+  tr: { label: 'Türkçe (TR)', code: 'TR', flag: '🇹🇷' },
+  zh: { label: '简体中文 (ZH)', code: 'ZH', flag: '🇨🇳' }
+};
 
 function t(key) {
   const dict = translations[currentLang] || translations.en;
@@ -354,9 +417,34 @@ function setLanguage(lang) {
   currentLang = lang;
   localStorage.setItem('xui_lang', lang);
 
-  // Direction (RTL for Persian, LTR for others)
+  // Direction & Language attributes (RTL for Persian, LTR for others)
   document.documentElement.lang = lang;
   document.documentElement.dir = (lang === 'fa') ? 'rtl' : 'ltr';
+  if (lang === 'fa') {
+    document.body.classList.add('rtl');
+  } else {
+    document.body.classList.remove('rtl');
+  }
+
+  // Update custom dropdown triggers
+  const meta = LANG_METADATA[lang] || LANG_METADATA.en;
+
+  const currFlag = document.getElementById('currLangFlag');
+  if (currFlag) currFlag.textContent = meta.flag;
+
+  const currLabel = document.getElementById('currLangLabel');
+  if (currLabel) currLabel.textContent = meta.label;
+
+  const mFlag = document.getElementById('mobileCurrLangFlag');
+  if (mFlag) mFlag.textContent = meta.flag;
+
+  const mCode = document.getElementById('mobileCurrLangCode');
+  if (mCode) mCode.textContent = meta.code;
+
+  // Update active item in all dropdown menus
+  document.querySelectorAll('.dropdown-item').forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-lang') === lang);
+  });
 
   // Apply translations to data-i18n elements
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -370,13 +458,39 @@ function setLanguage(lang) {
     if (k && t(k)) el.placeholder = t(k);
   });
 
-  // Update language selector dropdown value if exists
-  const sel = document.getElementById('langSelector');
-  if (sel) sel.value = lang;
-
-  // Re-render dynamic elements
+  // Re-render dynamic components
   if (typeof renderSchedules === 'function') renderSchedules();
   if (typeof renderPanels === 'function') renderPanels();
   if (typeof renderLogs === 'function') renderLogs();
   if (typeof updateRouteViewTitles === 'function') updateRouteViewTitles();
 }
+
+function toggleLangDropdown(event, type = 'desktop') {
+  if (event) event.stopPropagation();
+  const targetId = (type === 'mobile') ? 'mobileLangDropdown' : 'langDropdown';
+  const otherId = (type === 'mobile') ? 'langDropdown' : 'mobileLangDropdown';
+
+  const el = document.getElementById(targetId);
+  const other = document.getElementById(otherId);
+  if (other) other.classList.remove('open');
+  if (el) el.classList.toggle('open');
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('open'));
+}
+
+function selectLanguage(lang) {
+  closeAllDropdowns();
+  setLanguage(lang);
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.custom-dropdown')) {
+    closeAllDropdowns();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeAllDropdowns();
+});

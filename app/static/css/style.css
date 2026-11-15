@@ -1,4 +1,6 @@
-/* ─── Modern Dark Obsidian SaaS Theme v5.0 ───────────────────────────────────── */
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+
+/* ─── Modern Dark Obsidian SaaS Theme v5.5 ───────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -29,8 +31,9 @@
   --danger: #f43f5e;
   --danger-glow: rgba(244, 63, 94, 0.2);
 
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Plus Jakarta Sans', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-persian: 'Vazirmatn', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -343,42 +346,200 @@ body {
   padding: 6px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  direction: ltr !important;
+  unicode-bidi: isolate;
 }
 
-.lang-picker-container {
+/* ─── Custom SaaS Language Dropdown Component ───────────────────────────── */
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+.custom-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 20, 31, 0.75);
+  border: 1px solid var(--border-color);
+  padding: 7px 13px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  outline: none;
+}
+
+.custom-dropdown-btn.compact {
+  padding: 6px 10px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.custom-dropdown-btn:hover {
+  background: rgba(30, 34, 52, 0.9);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+  transform: translateY(-1px);
+}
+
+.custom-dropdown.open .custom-dropdown-btn {
+  background: rgba(34, 38, 60, 0.98);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.lang-flag-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.lang-btn-text {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.dropdown-chevron {
+  width: 13px;
+  height: 13px;
+  stroke: var(--text-muted);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease;
+  flex-shrink: 0;
+}
+
+.custom-dropdown.open .dropdown-chevron {
+  transform: rotate(180deg);
+  stroke: var(--accent-cyan);
+}
+
+/* Dropdown Menu Popup Box */
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 215px;
+  background: rgba(15, 17, 26, 0.96);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 25px rgba(139, 92, 246, 0.15);
+  padding: 6px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.96);
+  transform-origin: top right;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              visibility 0.2s ease;
+  pointer-events: none;
+}
+
+.custom-dropdown.open .custom-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.dropdown-menu-header {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 12px 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 4px;
+}
+
+.dropdown-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dropdown-item {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0 10px;
-  height: 34px;
-  transition: var(--transition);
-}
-
-.lang-picker-container:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.lang-globe {
-  font-size: 13px;
-  margin-right: 6px;
-}
-
-.lang-select {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 12.5px;
-  font-weight: 600;
-  font-family: inherit;
-  outline: none;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
 }
 
-.lang-select option {
-  background: #0f121d;
+.dropdown-item:hover {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.28);
   color: #fff;
+  transform: translateX(2px);
+}
+
+.dropdown-item.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #fff;
+}
+
+.dropdown-item .item-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.dropdown-item .item-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-align: left;
+}
+
+.dropdown-item .item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dropdown-item .item-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.dropdown-item.active .item-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+.dropdown-item .item-check {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-item.active .item-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Button Icon SVG */
+.btn-icon-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* ─── Section Header (Titles + Action Buttons) ──────────────────────────────── */
@@ -1216,9 +1377,14 @@ body {
 }
 
 /* ─── RTL Support (For Persian) ─────────────────────────────────────────────── */
-[dir="rtl"] {
+[dir="rtl"], [lang="fa"], body.rtl {
   direction: rtl;
   text-align: right;
+  font-family: var(--font-persian) !important;
+}
+
+[dir="rtl"] * {
+  font-family: inherit;
 }
 
 [dir="rtl"] .sidebar {
@@ -1238,8 +1404,13 @@ body {
   text-align: right;
 }
 
+[dir="rtl"] .modern-table th:last-child,
+[dir="rtl"] .modern-table td:last-child {
+  text-align: left !important;
+}
+
 [dir="rtl"] .table-actions {
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 [dir="rtl"] .toolbar-search input {
@@ -1251,9 +1422,38 @@ body {
   right: 12px;
 }
 
-[dir="rtl"] .lang-globe {
-  margin-right: 0;
-  margin-left: 6px;
+[dir="rtl"] .custom-dropdown-menu {
+  right: auto;
+  left: 0;
+  transform-origin: top left;
+}
+
+[dir="rtl"] .dropdown-item {
+  text-align: right;
+}
+
+[dir="rtl"] .dropdown-item:hover {
+  transform: translateX(-2px);
+}
+
+[dir="rtl"] .modal-close-btn {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Strictly enforce LTR on tabular digits, codes, clocks, and time ranges */
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="rtl"] .font-mono,
+[dir="rtl"] .window-badge,
+[dir="rtl"] .system-clock-badge,
+[dir="rtl"] .gauge-badge,
+[dir="rtl"] #liveClockDisplay,
+[dir="rtl"] #statUptime {
+  font-family: var(--font-mono) !important;
+  direction: ltr !important;
+  unicode-bidi: isolate;
+  display: inline-flex;
 }
 
 /* ─── Responsive Media Queries (Mobile & Tablet) ────────────────────────────── */
@@ -1312,6 +1512,10 @@ body {
   .global-topbar {
     padding: 12px 0;
     margin-bottom: 18px;
+  }
+
+  .global-topbar #langDropdown {
+    display: none;
   }
 
   .section-title-bar {

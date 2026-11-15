@@ -6,8 +6,10 @@
 <title>3X-UI Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css?v=5.2"/>
+<!-- Vazirmatn Font for Persian (jsDelivr CDN + Google Fonts) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Vazirmatn:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=5.5"/>
 </head>
 <body>
 
@@ -19,7 +21,7 @@
       <div class="loader-ring"></div>
     </div>
     <h3 class="loader-title">3X-UI MANAGER</h3>
-    <p class="loader-subtitle">Loading system telemetry & schedules...</p>
+    <p class="loader-subtitle" data-i18n="loader_sub">Loading system telemetry & schedules...</p>
   </div>
 </div>
 
@@ -32,15 +34,45 @@
       <span class="brand-title">3X-UI Manager</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
-      <div class="lang-picker-container compact">
-        <select class="lang-select" onchange="setLanguage(this.value)">
-          <option value="en">EN</option>
-          <option value="fa">FA</option>
-          <option value="ru">RU</option>
-          <option value="tr">TR</option>
-          <option value="zh">ZH</option>
-        </select>
+      <!-- Mobile Custom Language Dropdown -->
+      <div class="custom-dropdown mobile-dropdown" id="mobileLangDropdown">
+        <button class="custom-dropdown-btn compact" type="button" onclick="toggleLangDropdown(event, 'mobile')" id="mobileLangDropdownBtn" aria-label="Select Language">
+          <span class="lang-flag-icon" id="mobileCurrLangFlag">🇺🇸</span>
+          <span class="lang-btn-text" id="mobileCurrLangCode">EN</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="custom-dropdown-menu" id="mobileLangMenu">
+          <div class="dropdown-menu-header" data-i18n="lang_select_title">SELECT LANGUAGE</div>
+          <div class="dropdown-menu-list">
+            <div class="dropdown-item" onclick="selectLanguage('en')" data-lang="en">
+              <span class="item-flag">🇺🇸</span>
+              <div class="item-info"><span class="item-title">English</span><span class="item-sub">United States</span></div>
+              <span class="item-check">✓</span>
+            </div>
+            <div class="dropdown-item" onclick="selectLanguage('fa')" data-lang="fa">
+              <span class="item-flag">🇮🇷</span>
+              <div class="item-info"><span class="item-title">فارسی</span><span class="item-sub">Persian (RTL)</span></div>
+              <span class="item-check">✓</span>
+            </div>
+            <div class="dropdown-item" onclick="selectLanguage('ru')" data-lang="ru">
+              <span class="item-flag">🇷🇺</span>
+              <div class="item-info"><span class="item-title">Русский</span><span class="item-sub">Russian</span></div>
+              <span class="item-check">✓</span>
+            </div>
+            <div class="dropdown-item" onclick="selectLanguage('tr')" data-lang="tr">
+              <span class="item-flag">🇹🇷</span>
+              <div class="item-info"><span class="item-title">Türkçe</span><span class="item-sub">Turkish</span></div>
+              <span class="item-check">✓</span>
+            </div>
+            <div class="dropdown-item" onclick="selectLanguage('zh')" data-lang="zh">
+              <span class="item-flag">🇨🇳</span>
+              <div class="item-info"><span class="item-title">简体中文</span><span class="item-sub">Chinese</span></div>
+              <span class="item-check">✓</span>
+            </div>
+          </div>
+        </div>
       </div>
+
       <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
         <span></span><span></span><span></span>
       </button>
@@ -121,15 +153,43 @@
           <span id="liveClockDisplay">--:--:--</span>
         </div>
 
-        <div class="lang-picker-container">
-          <span class="lang-globe">🌐</span>
-          <select id="langSelector" class="lang-select" onchange="setLanguage(this.value)">
-            <option value="en">English (US)</option>
-            <option value="fa">فارسی (FA)</option>
-            <option value="ru">Русский (RU)</option>
-            <option value="tr">Türkçe (TR)</option>
-            <option value="zh">简体中文 (ZH)</option>
-          </select>
+        <!-- Desktop Custom Language Dropdown -->
+        <div class="custom-dropdown" id="langDropdown">
+          <button class="custom-dropdown-btn" type="button" onclick="toggleLangDropdown(event, 'desktop')" id="langDropdownBtn" aria-label="Select Language">
+            <span class="lang-flag-icon" id="currLangFlag">🇺🇸</span>
+            <span class="lang-btn-text" id="currLangLabel">English (US)</span>
+            <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="custom-dropdown-menu" id="langMenu">
+            <div class="dropdown-menu-header" data-i18n="lang_select_title">SELECT LANGUAGE</div>
+            <div class="dropdown-menu-list">
+              <div class="dropdown-item" onclick="selectLanguage('en')" data-lang="en">
+                <span class="item-flag">🇺🇸</span>
+                <div class="item-info"><span class="item-title">English</span><span class="item-sub">United States</span></div>
+                <span class="item-check">✓</span>
+              </div>
+              <div class="dropdown-item" onclick="selectLanguage('fa')" data-lang="fa">
+                <span class="item-flag">🇮🇷</span>
+                <div class="item-info"><span class="item-title">فارسی</span><span class="item-sub">Persian (RTL)</span></div>
+                <span class="item-check">✓</span>
+              </div>
+              <div class="dropdown-item" onclick="selectLanguage('ru')" data-lang="ru">
+                <span class="item-flag">🇷🇺</span>
+                <div class="item-info"><span class="item-title">Русский</span><span class="item-sub">Russian</span></div>
+                <span class="item-check">✓</span>
+              </div>
+              <div class="dropdown-item" onclick="selectLanguage('tr')" data-lang="tr">
+                <span class="item-flag">🇹🇷</span>
+                <div class="item-info"><span class="item-title">Türkçe</span><span class="item-sub">Turkish</span></div>
+                <span class="item-check">✓</span>
+              </div>
+              <div class="dropdown-item" onclick="selectLanguage('zh')" data-lang="zh">
+                <span class="item-flag">🇨🇳</span>
+                <div class="item-info"><span class="item-title">简体中文</span><span class="item-sub">Chinese</span></div>
+                <span class="item-check">✓</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -139,7 +199,7 @@
       <div class="section-title-bar">
         <div>
           <h2 class="view-title" data-i18n="nav_overview">System Overview</h2>
-          <p class="view-subtitle">Live hardware telemetry and automated service statuses</p>
+          <p class="view-subtitle" data-i18n="sub_overview">Live hardware telemetry and automated service statuses</p>
         </div>
       </div>
 
@@ -245,11 +305,12 @@
       <div class="section-title-bar">
         <div>
           <h2 class="view-title" data-i18n="nav_schedules">Inbound Schedules</h2>
-          <p class="view-subtitle">Automatic timer rules for enabling and disabling inbounds</p>
+          <p class="view-subtitle" data-i18n="sub_schedules">Automatic timer rules for enabling and disabling inbounds</p>
         </div>
         <div>
           <button class="btn btn-primary" onclick="showAddSchedule()">
-            + <span data-i18n="btn_new_schedule">New Schedule</span>
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span data-i18n="btn_new_schedule">New Schedule</span>
           </button>
         </div>
       </div>
@@ -282,7 +343,10 @@
           <div class="empty-illustration">⏰</div>
           <h4 data-i18n="empty_schedules_title">No automated schedules found</h4>
           <p data-i18n="empty_schedules_sub">Create your first schedule to start turning inbounds ON and OFF on your custom hours.</p>
-          <button class="btn btn-primary" onclick="showAddSchedule()">+ <span data-i18n="btn_new_schedule">New Schedule</span></button>
+          <button class="btn btn-primary" onclick="showAddSchedule()">
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span data-i18n="btn_new_schedule">New Schedule</span>
+          </button>
         </div>
       </div>
     </section>
@@ -292,11 +356,12 @@
       <div class="section-title-bar">
         <div>
           <h2 class="view-title" data-i18n="nav_panels">Connected Panels</h2>
-          <p class="view-subtitle">Manage token authenticated 3X-UI instances</p>
+          <p class="view-subtitle" data-i18n="sub_panels">Manage token authenticated 3X-UI instances</p>
         </div>
         <div>
           <button class="btn btn-primary" onclick="showAddPanel()">
-            + <span data-i18n="btn_new_panel">Add Panel</span>
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span data-i18n="btn_new_panel">Add Panel</span>
           </button>
         </div>
       </div>
@@ -306,7 +371,10 @@
         <div class="empty-illustration">🖥️</div>
         <h4 data-i18n="empty_panels_title">No panels connected</h4>
         <p data-i18n="empty_panels_sub">Connect your 3X-UI panel instance with an API Bearer token.</p>
-        <button class="btn btn-primary" onclick="showAddPanel()">+ <span data-i18n="btn_new_panel">Add Panel</span></button>
+        <button class="btn btn-primary" onclick="showAddPanel()">
+          <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span data-i18n="btn_new_panel">Add Panel</span>
+        </button>
       </div>
     </section>
 
@@ -315,7 +383,7 @@
       <div class="section-title-bar">
         <div>
           <h2 class="view-title" data-i18n="nav_logs">Activity Logs</h2>
-          <p class="view-subtitle">Audit trail of execution events, automatic synchronizations, and manual triggers</p>
+          <p class="view-subtitle" data-i18n="sub_logs">Audit trail of execution events, automatic synchronizations, and manual triggers</p>
         </div>
         <div style="display:flex;gap:10px;">
           <button class="btn btn-ghost" onclick="loadBackendLogs()">🔄 <span data-i18n="btn_refresh">Refresh</span></button>
@@ -331,8 +399,8 @@
                 <th data-i18n="th_timestamp">Timestamp</th>
                 <th data-i18n="th_panel">Panel</th>
                 <th data-i18n="th_inbound">Target Inbound</th>
-                <th>Action</th>
-                <th>Status</th>
+                <th data-i18n="th_action">Action</th>
+                <th data-i18n="th_status">Status</th>
                 <th data-i18n="th_details">Execution Details</th>
               </tr>
             </thead>
@@ -352,7 +420,7 @@
       <div class="section-title-bar">
         <div>
           <h2 class="view-title" data-i18n="nav_settings">System Settings</h2>
-          <p class="view-subtitle">Telegram bot alerts, multi-user accounts, and network port configuration</p>
+          <p class="view-subtitle" data-i18n="sub_settings">Telegram bot alerts, multi-user accounts, and network port configuration</p>
         </div>
       </div>
 
@@ -367,7 +435,7 @@
             <p data-i18n="tg_sub">Receive real-time alerts whenever an inbound is enabled, disabled, or if an error occurs.</p>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Bot Alerts:</span>
+            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);" data-i18n="tg_status_label">Bot Alerts:</span>
             <span class="toggle-switch" id="tgEnabledToggle" onclick="toggleTelegramState()"></span>
           </div>
         </div>
@@ -423,7 +491,10 @@
             <p data-i18n="user_sub">Manage accounts and roles: <b>Admin</b> (full control), <b>Operator</b> (schedules & triggers), <b>Viewer</b> (read-only).</p>
           </div>
           <div>
-            <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">+ <span data-i18n="btn_new_user">Add User</span></button>
+            <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">
+              <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span data-i18n="btn_new_user">Add User</span>
+            </button>
           </div>
         </div>
 
@@ -455,9 +526,9 @@
         </div>
         <div style="padding:24px;max-width:420px;">
           <div class="form-field">
-            <label>Port Number</label>
+            <label data-i18n="port_label">Port Number</label>
             <input type="number" class="form-input" id="setPort" placeholder="8181" min="1" max="65535"/>
-            <span class="field-hint">After changing, run <code>systemctl restart xui-manager</code> on your server.</span>
+            <span class="field-hint" data-i18n="port_hint">After changing, run <code>systemctl restart xui-manager</code> on your server.</span>
           </div>
           <button class="btn btn-primary" onclick="savePortSetting()">
             <span data-i18n="port_save">Save Port</span>
@@ -487,7 +558,7 @@
 <!-- Notification Toast Container -->
 <div class="toast-stack" id="toastStack"></div>
 
-<script src="/static/js/i18n.js?v=5.2"></script>
-<script src="/static/js/app.js?v=5.2"></script>
+<script src="/static/js/i18n.js?v=5.5"></script>
+<script src="/static/js/app.js?v=5.5"></script>
 </body>
 </html>
