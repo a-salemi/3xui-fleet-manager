@@ -139,7 +139,13 @@ const translations = {
     twofa_secret_key: "Secret Setup Key:",
     twofa_enter_code: "Enter 6-digit confirmation code from your app:",
     btn_verify_enable: "Verify & Enable 2FA",
-    copy_secret_success: "Secret key copied to clipboard!"
+    copy_secret_success: "Secret key copied to clipboard!",
+    modal_edit_panel: "Edit 3X-UI Panel",
+    field_panel_name: "Panel Display Name",
+    field_panel_url: "Panel Base URL",
+    field_panel_token: "API Bearer Token",
+    field_path_prefix: "Path Prefix",
+    btn_update_panel: "Update Panel Instance"
   },
   fa: {
     nav_overview: "داشبورد و وضعیت سرور",
@@ -280,7 +286,13 @@ const translations = {
     twofa_secret_key: "کلید سکرت پشتیبان:",
     twofa_enter_code: "کد ۶ رقمی لحظه‌ای نمایش‌داده‌شده در اپلیکیشن را وارد کنید:",
     btn_verify_enable: "تأیید کد و فعال‌سازی نهایی",
-    copy_secret_success: "کلید سکرت در کلیپ‌بورد کپی شد!"
+    copy_secret_success: "کلید سکرت در کلیپ‌بورد کپی شد!",
+    modal_edit_panel: "ویرایش پنل 3X-UI",
+    field_panel_name: "نام نمایشی پنل",
+    field_panel_url: "آدرس پایه پنل (Base URL)",
+    field_panel_token: "توکن API Bearer",
+    field_path_prefix: "پیشوند مسیر (Path Prefix)",
+    btn_update_panel: "به‌روزرسانی تنظیمات پنل"
   },
   ru: {
     nav_overview: "Обзор системы",
@@ -421,7 +433,13 @@ const translations = {
     twofa_secret_key: "Секретный ключ:",
     twofa_enter_code: "Введите 6-значный код подтверждения:",
     btn_verify_enable: "Подтвердить и включить",
-    copy_secret_success: "Секретный ключ скопирован в буфер!"
+    copy_secret_success: "Секретный ключ скопирован в буфер!",
+    modal_edit_panel: "Редактировать панель 3X-UI",
+    field_panel_name: "Название панели",
+    field_panel_url: "Базовый URL панели",
+    field_panel_token: "API Bearer токен",
+    field_path_prefix: "Префикс пути",
+    btn_update_panel: "Обновить панель"
   },
   tr: {
     nav_overview: "Genel Bakış",
@@ -562,7 +580,13 @@ const translations = {
     twofa_secret_key: "Gizli Kurulum Anahtarı:",
     twofa_enter_code: "Uygulamanızdaki 6 haneli onay kodunu girin:",
     btn_verify_enable: "Doğrula ve 2FA'yı Etkinleştir",
-    copy_secret_success: "Gizli anahtar panoya kopyalandı!"
+    copy_secret_success: "Gizli anahtar panoya kopyalandı!",
+    modal_edit_panel: "3X-UI Panelini Düzenle",
+    field_panel_name: "Panel Görünen Adı",
+    field_panel_url: "Panel Temel URL",
+    field_panel_token: "API Bearer Token",
+    field_path_prefix: "Yol Ön Eki",
+    btn_update_panel: "Paneli Güncelle"
   },
   zh: {
     nav_overview: "概览大盘",
@@ -703,7 +727,13 @@ const translations = {
     twofa_secret_key: "设置密钥：",
     twofa_enter_code: "输入 App 中的 6 位验证码：",
     btn_verify_enable: "验证并激活 2FA",
-    copy_secret_success: "密钥已复制到剪贴板！"
+    copy_secret_success: "密钥已复制到剪贴板！",
+    modal_edit_panel: "编辑 3X-UI 面板",
+    field_panel_name: "面板显示名称",
+    field_panel_url: "面板基础 URL",
+    field_panel_token: "API Bearer 令牌",
+    field_path_prefix: "路径前缀",
+    btn_update_panel: "更新面板实例"
   }
 };
 

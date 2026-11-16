@@ -296,6 +296,23 @@ async def api_add_panel(data: PanelConfigCreate, _=Depends(require_operator_or_a
     return panel.model_dump()
 
 
+@app.put("/api/panels/{panel_id}")
+async def api_update_panel(panel_id: str, data: PanelConfigCreate, _=Depends(require_operator_or_admin)):
+    existing = storage.get_panel(panel_id)
+    if not existing:
+        raise HTTPException(404, "Panel not found")
+    updated = PanelConfig(
+        id=panel_id,
+        name=data.name.strip(),
+        url=data.url.strip(),
+        token=data.token.strip(),
+        path_prefix=data.path_prefix.strip() if data.path_prefix else "/panel"
+    )
+    storage.save_panel(updated)
+    storage.add_log(updated.name, "Panel Config", "UPDATE", "SUCCESS", f"Panel {updated.name} updated ({updated.url})")
+    return updated.model_dump()
+
+
 @app.delete("/api/panels/{panel_id}")
 async def api_delete_panel(panel_id: str, _=Depends(require_admin)):
     p = storage.get_panel(panel_id)

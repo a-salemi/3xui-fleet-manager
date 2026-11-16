@@ -451,6 +451,7 @@ function renderPanels() {
       <div class="panel-footer-actions">
         <button class="btn btn-xray-restart" onclick="restartPanelXray('${p.id}')" title="${t('btn_restart_xray')}">${t('btn_restart_xray')}</button>
         <button class="btn btn-ghost btn-sm" onclick="testPanel('${p.id}')">🔌 ${t('btn_test') || 'Test'}</button>
+        <button class="btn btn-edit btn-sm" onclick="editPanel('${p.id}')">✏️ ${t('btn_edit') || 'Edit'}</button>
         <button class="btn btn-danger btn-sm" onclick="deletePanel('${p.id}')">🗑 ${t('btn_delete') || 'Delete'}</button>
       </div>
     </div>
@@ -554,6 +555,62 @@ async function savePanel() {
     closeModal();
     toast('Panel saved successfully! Click "Test" to verify.');
     await loadPanels();
+  } catch (e) {
+    toast(e.message, false);
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+function editPanel(id) {
+  const p = panels.find(x => String(x.id).trim() === String(id).trim());
+  if (!p) return;
+  openModal(t('modal_edit_panel') || 'Edit 3X-UI Panel', 'EDIT INSTANCE', `
+    <div class="form-field">
+      <label>${t('field_panel_name') || 'Panel Display Name'}</label>
+      <input class="form-input" id="editPName" value="${esc(p.name)}" placeholder="e.g. ShabGard Server"/>
+    </div>
+    <div class="form-field">
+      <label>${t('field_panel_url') || 'Panel Base URL'}</label>
+      <input class="form-input" id="editPUrl" value="${esc(p.url)}" placeholder="https://127.0.0.1:2087/shabgard"/>
+      <span class="field-hint">Include sub-path if set (e.g. /shabgard). Use 127.0.0.1 if on same VPS.</span>
+    </div>
+    <div class="form-field">
+      <label>${t('field_panel_token') || 'API Bearer Token'}</label>
+      <input class="form-input" id="editPToken" value="${esc(p.token)}" placeholder="Paste token from Panel Settings > API Token"/>
+    </div>
+    <div class="form-field">
+      <label>${t('field_path_prefix') || 'Path Prefix'}</label>
+      <input class="form-input" id="editPPrefix" value="${esc(p.path_prefix || '/panel')}"/>
+      <span class="field-hint">Default is /panel. Only change if reverse-proxy dictates otherwise.</span>
+    </div>
+    <button class="btn btn-primary" id="btnUpdatePanel" style="width:100%;margin-top:10px" onclick="updatePanel('${p.id}')">
+      ${t('btn_update_panel') || 'Update Panel Instance'}
+    </button>
+  `);
+}
+
+async function updatePanel(id) {
+  const btn = document.getElementById('btnUpdatePanel');
+  const data = {
+    name: document.getElementById('editPName').value.trim(),
+    url: document.getElementById('editPUrl').value.trim().replace(/\/+$/, ''),
+    token: document.getElementById('editPToken').value.trim(),
+    path_prefix: document.getElementById('editPPrefix').value.trim() || '/panel',
+  };
+  if (!data.name || !data.url || !data.token) {
+    toast('Please fill all required fields', false);
+    return;
+  }
+
+  setBtnLoading(btn, true, 'Updating...');
+  try {
+    await api('PUT', `/api/panels/${id}`, data);
+    closeModal();
+    toast('Panel updated successfully! Linked schedules preserved.', 'ok');
+    await loadPanels();
+    await loadSchedules();
+    loadBackendLogs();
   } catch (e) {
     toast(e.message, false);
   } finally {

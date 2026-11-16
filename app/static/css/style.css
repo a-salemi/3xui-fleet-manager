@@ -269,6 +269,72 @@ html[data-theme="light"] .toast-apple.info .toast-island-icon {
   box-shadow: 0 0 14px rgba(14, 165, 233, 0.22) !important;
 }
 
+/* Light Theme: Mobile Table Cards & Logs View */
+html[data-theme="light"] .modern-table tr {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme="light"] .log-top-bar,
+html[data-theme="light"] .schedule-card-top,
+html[data-theme="light"] .user-top-bar {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .log-details-box {
+  background: rgba(0, 0, 0, 0.035) !important;
+  color: #334155 !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .log-time-badge,
+html[data-theme="light"] .cell-label {
+  color: #64748b !important;
+}
+
+html[data-theme="light"] .col-actions {
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .backup-btn-card {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="light"] .backup-btn-card:hover {
+  background: rgba(124, 58, 237, 0.05) !important;
+  border-color: rgba(124, 58, 237, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08) !important;
+}
+
+html[data-theme="light"] .btn-edit {
+  background: rgba(6, 182, 212, 0.1) !important;
+  color: #0284c7 !important;
+  border-color: rgba(6, 182, 212, 0.25) !important;
+}
+
+html[data-theme="light"] .btn-edit:hover {
+  background: rgba(6, 182, 212, 0.18) !important;
+}
+
+html[data-theme="light"] .btn-ghost {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .panel-ping-badge {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #475569 !important;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-core);
@@ -2500,6 +2566,12 @@ body.rtl .backup-btn-card {
     backdrop-filter: blur(8px) !important;
   }
 
+  html[data-theme="light"] .modern-table tr {
+    background: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  }
+
   .modern-table tr:hover td {
     background: transparent !important;
   }
@@ -2579,6 +2651,10 @@ body.rtl .backup-btn-card {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
   }
 
+  html[data-theme="light"] .log-top-bar {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+
   .log-details-box {
     width: 100% !important;
     padding: 8px 10px !important;
@@ -2592,6 +2668,12 @@ body.rtl .backup-btn-card {
     box-sizing: border-box !important;
   }
 
+  html[data-theme="light"] .log-details-box {
+    background: rgba(0, 0, 0, 0.035) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    color: #334155 !important;
+  }
+
   .user-top-bar {
     width: 100% !important;
     display: flex !important;
@@ -2599,6 +2681,18 @@ body.rtl .backup-btn-card {
     align-items: center !important;
     padding-bottom: 8px !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  html[data-theme="light"] .user-top-bar {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+
+  html[data-theme="light"] .schedule-card-top {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+
+  html[data-theme="light"] .col-actions {
+    border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
   }
 
   .modal-dialog {

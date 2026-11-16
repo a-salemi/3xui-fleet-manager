@@ -41,13 +41,26 @@ def get_panel(panel_id: str) -> Optional[PanelConfig]:
 
 def save_panel(panel: PanelConfig):
     panels = _load_json(PANELS_FILE)
+    found = False
     for i, p in enumerate(panels):
         if p["id"] == panel.id:
             panels[i] = panel.model_dump()
-            _save_json(PANELS_FILE, panels)
-            return
-    panels.append(panel.model_dump())
+            found = True
+            break
+    if not found:
+        panels.append(panel.model_dump())
     _save_json(PANELS_FILE, panels)
+
+    # Sync panel_name across linked schedules if panel name was updated
+    schedules = _load_json(SCHEDULES_FILE)
+    changed = False
+    for s in schedules:
+        if str(s.get("panel_id", "")).strip() == str(panel.id).strip():
+            if s.get("panel_name") != panel.name:
+                s["panel_name"] = panel.name
+                changed = True
+    if changed:
+        _save_json(SCHEDULES_FILE, schedules)
 
 
 def delete_panel(panel_id: str) -> bool:
