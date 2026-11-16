@@ -124,6 +124,11 @@ function navigateRoute(route, pushState = true) {
   // Route-specific instant actions
   if (route === 'dashboard') loadSystemMetrics();
   if (route === 'logs') loadBackendLogs();
+  if (route === 'settings' && currentUser && currentUser.role === 'admin') {
+    loadSettings();
+    loadUsers();
+    load2FAStatus();
+  }
 }
 
 function updateRouteViewTitles() {
@@ -174,6 +179,8 @@ async function loadMe() {
     if (currentUser.role !== 'admin') {
       const uSec = document.getElementById('adminUsersSection');
       if (uSec) uSec.style.display = 'none';
+      const a2fa = document.getElementById('admin2faSection');
+      if (a2fa) a2fa.style.display = 'none';
     }
   } catch (e) {
     console.error('Failed to load user profile:', e);
@@ -1522,6 +1529,9 @@ async function clearBackendLogs() {
 
 // ─── 4. SETTINGS & TELEGRAM INTEGRATION ──────────────────────────────────────
 async function loadSettings() {
+  if (currentUser && currentUser.role === 'admin') {
+    load2FAStatus();
+  }
   try {
     const s = await api('GET', '/api/settings');
     if (s) {
@@ -1772,6 +1782,158 @@ async function deleteUser(userId) {
     await loadUsers();
   } catch (e) {
     toast(e.message, false);
+  }
+}
+
+// ─── 5.1 TWO-FACTOR AUTHENTICATION (2FA / TOTP) ──────────────────────────
+async function load2FAStatus() {
+  const badge = document.getElementById('twoFaStatusBadge');
+  const area = document.getElementById('twoFaContentArea');
+  if (!badge || !area) return;
+
+  try {
+    const res = await api('GET', '/api/settings/2fa/status');
+    if (res.enabled) {
+      badge.className = 'panel-status-tag online';
+      badge.textContent = t('twofa_status_enabled');
+      area.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+          <div>
+            <div style="font-weight:700;color:var(--success);font-size:15px;display:flex;align-items:center;gap:6px;">
+              <span>🛡️</span> <span>${t('twofa_status_enabled')}</span>
+            </div>
+            <p style="font-size:12.5px;color:var(--text-muted);margin-top:6px;max-width:560px;line-height:1.5;">
+              ${t('twofa_sub')}
+            </p>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="disable2FA()">
+            ${t('btn_disable_2fa')}
+          </button>
+        </div>
+      `;
+    } else {
+      badge.className = 'panel-status-tag';
+      badge.textContent = t('twofa_status_disabled');
+      area.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+          <div>
+            <div style="font-weight:700;color:var(--text-secondary);font-size:15px;display:flex;align-items:center;gap:6px;">
+              <span>⚪</span> <span>${t('twofa_status_disabled')}</span>
+            </div>
+            <p style="font-size:12.5px;color:var(--text-muted);margin-top:6px;max-width:560px;line-height:1.5;">
+              ${t('twofa_sub')}
+            </p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="start2FASetup()">
+            ${t('btn_enable_2fa')}
+          </button>
+        </div>
+      `;
+    }
+  } catch (e) {
+    console.error('Failed to load 2FA status:', e);
+  }
+}
+
+async function start2FASetup() {
+  try {
+    toast('Generating 2FA configuration...', 'info');
+    const res = await api('POST', '/api/settings/2fa/setup');
+    openModal(t('twofa_title'), '2FA SETUP', `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">${t('twofa_scan_desc')}</p>
+        <div style="display:flex;justify-content:center;padding:12px;background:#ffffff;border-radius:12px;width:fit-content;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,0.15);" id="twoFaQrContainer"></div>
+        <div class="form-field">
+          <label>${t('twofa_secret_key')}</label>
+          <div style="display:flex;gap:8px;">
+            <input class="form-input" id="twoFaSecretInput" value="${res.secret}" readonly style="font-family:var(--font-mono);font-size:13.5px;font-weight:700;letter-spacing:1px;text-align:center;background:rgba(255,255,255,0.04);"/>
+            <button class="btn btn-ghost" type="button" onclick="copy2FaSecret()" title="Copy Key">📋</button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>${t('twofa_enter_code')}</label>
+          <input class="form-input" id="twoFaConfirmCode" placeholder="123456" maxlength="6" inputmode="numeric" style="text-align:center;font-size:22px;letter-spacing:6px;font-family:var(--font-mono);font-weight:700;" autocomplete="one-time-code" autofocus/>
+        </div>
+        <button class="btn btn-primary" id="btnConfirm2FA" style="width:100%;margin-top:6px;" onclick="confirmAndEnable2FA('${res.secret}')">
+          ${t('btn_verify_enable')}
+        </button>
+      </div>
+    `);
+
+    setTimeout(() => {
+      const qrBox = document.getElementById('twoFaQrContainer');
+      if (qrBox && typeof QRCode !== 'undefined') {
+        new QRCode(qrBox, {
+          text: res.uri,
+          width: 170,
+          height: 170,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+      const codeInp = document.getElementById('twoFaConfirmCode');
+      if (codeInp) {
+        codeInp.focus();
+        codeInp.addEventListener('keyup', (e) => {
+          if (e.key === 'Enter') confirmAndEnable2FA(res.secret);
+        });
+      }
+    }, 80);
+  } catch (e) {
+    toast('Failed to initialize 2FA: ' + (e.message || e), 'err');
+  }
+}
+
+function copy2FaSecret() {
+  const inp = document.getElementById('twoFaSecretInput');
+  if (!inp) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(inp.value).then(() => {
+      toast(t('copy_secret_success') || 'Secret key copied to clipboard!', 'ok');
+    }).catch(() => {
+      inp.select();
+      document.execCommand('copy');
+      toast(t('copy_secret_success') || 'Secret key copied to clipboard!', 'ok');
+    });
+  } else {
+    inp.select();
+    document.execCommand('copy');
+    toast(t('copy_secret_success') || 'Secret key copied to clipboard!', 'ok');
+  }
+}
+
+async function confirmAndEnable2FA(secret) {
+  const codeInp = document.getElementById('twoFaConfirmCode');
+  const code = codeInp ? codeInp.value.trim() : '';
+  if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+    toast('Please enter a valid 6-digit confirmation code.', 'err');
+    return;
+  }
+  const btn = document.getElementById('btnConfirm2FA');
+  setBtnLoading(btn, true, 'Verifying...');
+  try {
+    const res = await api('POST', '/api/settings/2fa/enable', { secret, code });
+    closeModal();
+    toast(res.message || 'Two-Factor Authentication activated successfully!', 'ok');
+    await load2FAStatus();
+    loadBackendLogs();
+  } catch (e) {
+    toast(e.message || 'Verification failed', 'err');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function disable2FA() {
+  if (!confirm('Are you sure you want to disable Two-Factor Authentication? Your account will only be protected by password.')) return;
+  try {
+    const res = await api('POST', '/api/settings/2fa/disable');
+    toast(res.message || 'Two-Factor Authentication disabled.', 'ok');
+    await load2FAStatus();
+    loadBackendLogs();
+  } catch (e) {
+    toast('Error disabling 2FA: ' + (e.message || e), 'err');
   }
 }
 

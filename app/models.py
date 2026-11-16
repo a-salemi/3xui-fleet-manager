@@ -99,6 +99,16 @@ class GeneralSettingsUpdate(BaseModel):
     telegram: TelegramSettings
 
 
+class TwoFactorSetupResponse(BaseModel):
+    secret: str
+    uri: str
+
+
+class TwoFactorVerifyRequest(BaseModel):
+    secret: str
+    code: str
+
+
 class UserCreate(BaseModel):
     username: str
     password: str

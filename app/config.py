@@ -12,6 +12,10 @@ DEFAULT_SETTINGS = {
         "chat_id": "",
         "socks_proxy": "",
         "api_server": ""
+    },
+    "two_factor": {
+        "enabled": False,
+        "secret": ""
     }
 }
 
@@ -27,6 +31,8 @@ def load_settings() -> Dict[str, Any]:
                 data[k] = v
         if "telegram" not in data or not isinstance(data["telegram"], dict):
             data["telegram"] = DEFAULT_SETTINGS["telegram"].copy()
+        if "two_factor" not in data or not isinstance(data["two_factor"], dict):
+            data["two_factor"] = DEFAULT_SETTINGS["two_factor"].copy()
         return data
     except Exception:
         return DEFAULT_SETTINGS.copy()

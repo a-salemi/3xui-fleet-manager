@@ -12,14 +12,15 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app import storage, scheduler as sched, users
+from app import storage, scheduler as sched, users, two_factor
 from app.config import load_settings, save_settings
 from app.system import get_system_metrics
 from app.telegram import test_telegram_alert, send_telegram_backup
 from app.models import (
     PanelConfigCreate, ScheduleEntryCreate, ScheduleEntryUpdate,
     PanelConfig, ScheduleEntry, GeneralSettingsUpdate,
-    TelegramTestRequest, UserCreate, UserUpdate
+    TelegramTestRequest, UserCreate, UserUpdate,
+    TwoFactorVerifyRequest
 )
 from app.xui_client import XUIClient
 
@@ -117,7 +118,12 @@ async def login_page(request: Request):
 
 
 @app.post("/login")
-async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
+async def do_login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    totp_code: Optional[str] = Form(None)
+):
     ip = _get_client_ip(request)
     remaining_lock = _check_ip_locked(ip)
     if remaining_lock:
@@ -133,6 +139,44 @@ async def do_login(request: Request, username: str = Form(...), password: str = 
 
     user = users.authenticate(username, password)
     if user:
+        # Check if Two-Factor Authentication (TOTP) is active
+        if two_factor.is_2fa_enabled():
+            if totp_code:
+                cfg = load_settings().get("two_factor", {})
+                secret = cfg.get("secret", "")
+                if two_factor.verify_totp(secret, totp_code):
+                    _record_login_success(ip)
+                    token = str(uuid.uuid4())
+                    _sessions[token] = user
+                    response = RedirectResponse("/dashboard", status_code=302)
+                    response.set_cookie("session", token, httponly=True, samesite="lax", max_age=86400 * 7)
+                    return response
+                else:
+                    _record_login_failure(ip)
+                    return templates.TemplateResponse(
+                        "login.html",
+                        {
+                            "request": request,
+                            "two_factor_step": True,
+                            "username": username,
+                            "password": password,
+                            "error": "Invalid 6-digit Authenticator code. Please check your app and try again."
+                        },
+                        status_code=401
+                    )
+            # Credentials are valid, display 2FA verification step
+            return templates.TemplateResponse(
+                "login.html",
+                {
+                    "request": request,
+                    "two_factor_step": True,
+                    "username": username,
+                    "password": password,
+                    "error": None
+                }
+            )
+
+        # 2FA not enabled - login directly
         _record_login_success(ip)
         token = str(uuid.uuid4())
         _sessions[token] = user
@@ -512,6 +556,36 @@ async def api_update_settings(data: GeneralSettingsUpdate, _=Depends(require_adm
     conf["telegram"] = data.telegram.model_dump()
     save_settings(conf)
     return {"ok": True, "message": "Settings updated successfully."}
+
+
+# ─── API: Two-Factor Authentication (2FA / TOTP) ──────────────────────────────
+
+@app.get("/api/settings/2fa/status")
+async def api_2fa_status(_=Depends(require_admin)):
+    return two_factor.get_2fa_status()
+
+
+@app.post("/api/settings/2fa/setup")
+async def api_2fa_setup(user: Dict[str, Any] = Depends(require_admin)):
+    secret = two_factor.generate_secret()
+    uri = two_factor.get_provisioning_uri(secret, account_name=user.get("username", "admin"))
+    return {"secret": secret, "uri": uri}
+
+
+@app.post("/api/settings/2fa/enable")
+async def api_2fa_enable(data: TwoFactorVerifyRequest, _=Depends(require_admin)):
+    ok = two_factor.enable_2fa(data.secret, data.code)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Invalid 6-digit code. Please check that your device time is accurate and retry.")
+    storage.add_log("Security Shield", "2FA (TOTP)", "ENABLE", "SUCCESS", "Two-Factor Authentication enabled by Administrator")
+    return {"ok": True, "message": "Two-Factor Authentication enabled successfully!"}
+
+
+@app.post("/api/settings/2fa/disable")
+async def api_2fa_disable(_=Depends(require_admin)):
+    two_factor.disable_2fa()
+    storage.add_log("Security Shield", "2FA (TOTP)", "DISABLE", "WARNING", "Two-Factor Authentication disabled by Administrator")
+    return {"ok": True, "message": "Two-Factor Authentication disabled."}
 
 
 @app.post("/api/telegram/test")

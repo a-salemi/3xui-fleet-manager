@@ -180,6 +180,25 @@
     </div>
   </div>
 
+  {% if two_factor_step %}
+  <h1>Two-Factor Verification</h1>
+  <p class="subtitle">Enter the 6-digit code from Google Authenticator or your 2FA app</p>
+
+  {% if error %}
+  <div class="error-box">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/login">
+    <input type="hidden" name="username" value="{{ username }}"/>
+    <input type="hidden" name="password" value="{{ password }}"/>
+    <div class="form-group">
+      <label>6-Digit Authenticator Code</label>
+      <input type="text" name="totp_code" placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" autofocus required style="text-align:center;font-size:22px;letter-spacing:6px;font-family:monospace;font-weight:700;"/>
+    </div>
+    <button class="btn" type="submit">Verify & Sign In →</button>
+    <a href="/login" style="display:block;text-align:center;margin-top:16px;color:var(--text-muted);font-size:12.5px;text-decoration:none;">← Cancel and return to login</a>
+  </form>
+  {% else %}
   <h1>Welcome Back</h1>
   <p class="subtitle">Sign in to control your inbound schedules</p>
 
@@ -198,6 +217,7 @@
     </div>
     <button class="btn" type="submit">Sign In to Dashboard →</button>
   </form>
+  {% endif %}
 </div>
 </body>
 </html>

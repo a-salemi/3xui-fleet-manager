@@ -9,7 +9,7 @@
 <!-- Vazirmatn Font for Persian (jsDelivr CDN + Google Fonts) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Vazirmatn:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css?v=9.5"/>
+<link rel="stylesheet" href="/static/css/style.css?v=10.0"/>
 <script>
   (function(){
     const t = localStorage.getItem('xui_theme') || 'dark';
@@ -527,6 +527,25 @@
         </div>
       </div>
 
+      <!-- Card B2: Two-Factor Authentication (2FA / TOTP) -->
+      <div class="content-card" id="admin2faSection" style="margin-bottom:24px;">
+        <div class="card-toolbar">
+          <div class="toolbar-info">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">🔐</span>
+              <h3 data-i18n="twofa_title">Two-Factor Authentication (2FA / TOTP)</h3>
+            </div>
+            <p data-i18n="twofa_sub">Enhance your dashboard security using time-based one-time password (TOTP) apps.</p>
+          </div>
+          <div>
+            <span id="twoFaStatusBadge" class="panel-status-tag" style="font-size:12px;padding:5px 12px;">Checking...</span>
+          </div>
+        </div>
+        <div style="padding:24px;" id="twoFaContentArea">
+          <!-- Dynamically rendered 2FA controls -->
+        </div>
+      </div>
+
       <!-- Card C: System Web Port -->
       <div class="content-card">
         <div class="card-toolbar">
@@ -602,7 +621,8 @@
 <!-- Notification Toast Container -->
 <div class="toast-stack" id="toastStack"></div>
 
-<script src="/static/js/i18n.js?v=9.5"></script>
-<script src="/static/js/app.js?v=9.5"></script>
+<script src="/static/js/qrcode.min.js"></script>
+<script src="/static/js/i18n.js?v=10.0"></script>
+<script src="/static/js/app.js?v=10.0"></script>
 </body>
 </html>

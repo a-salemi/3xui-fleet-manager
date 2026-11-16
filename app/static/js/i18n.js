@@ -127,7 +127,19 @@ const translations = {
     badge_reset_traffic: "Reset Traffic",
     badge_command: "Shell Script",
     badge_api: "Custom API",
-    badge_alert: "Telegram Alert"
+    badge_alert: "Telegram Alert",
+    twofa_title: "Two-Factor Authentication (2FA / TOTP)",
+    twofa_sub: "Enhance your dashboard security using time-based one-time password (TOTP) apps like Google Authenticator or Microsoft Authenticator.",
+    twofa_status_enabled: "🟢 2FA is Active",
+    twofa_status_disabled: "⚪ 2FA is Disabled",
+    btn_enable_2fa: "🔐 Setup & Enable 2FA",
+    btn_disable_2fa: "🔓 Disable 2FA",
+    twofa_scan_title: "Scan with Authenticator App",
+    twofa_scan_desc: "Scan this QR code with Google Authenticator, or enter the secret key manually:",
+    twofa_secret_key: "Secret Setup Key:",
+    twofa_enter_code: "Enter 6-digit confirmation code from your app:",
+    btn_verify_enable: "Verify & Enable 2FA",
+    copy_secret_success: "Secret key copied to clipboard!"
   },
   fa: {
     nav_overview: "داشبورد و وضعیت سرور",
@@ -256,7 +268,19 @@ const translations = {
     badge_reset_traffic: "صفر کردن حجم",
     badge_command: "دستور شل",
     badge_api: "وب‌هوک API",
-    badge_alert: "آلارم تلگرام"
+    badge_alert: "آلارم تلگرام",
+    twofa_title: "ورود دو مرحله‌ای امن (2FA / TOTP)",
+    twofa_sub: "ارتقای امنیت پنل مدیریت با کدهای یک‌بارمصرف اپلیکیشن‌های احراز هویت نظیر Google Authenticator.",
+    twofa_status_enabled: "🟢 ورود دو مرحله‌ای فعال است",
+    twofa_status_disabled: "⚪ ورود دو مرحله‌ای غیرفعال است",
+    btn_enable_2fa: "🔐 راه‌اندازی و فعال‌سازی ورود دو مرحله‌ای",
+    btn_disable_2fa: "🔓 غیرفعال‌سازی ورود دو مرحله‌ای",
+    twofa_scan_title: "اسکن با اپلیکیشن احراز هویت (Authenticator)",
+    twofa_scan_desc: "این کد QR را با Google Authenticator یا اپلیکیشن مشابه اسکن کنید یا کلید را دستی وارد نمایید:",
+    twofa_secret_key: "کلید سکرت پشتیبان:",
+    twofa_enter_code: "کد ۶ رقمی لحظه‌ای نمایش‌داده‌شده در اپلیکیشن را وارد کنید:",
+    btn_verify_enable: "تأیید کد و فعال‌سازی نهایی",
+    copy_secret_success: "کلید سکرت در کلیپ‌بورد کپی شد!"
   },
   ru: {
     nav_overview: "Обзор системы",
@@ -385,7 +409,19 @@ const translations = {
     badge_reset_traffic: "Сброс трафика",
     badge_command: "Shell скрипт",
     badge_api: "API запрос",
-    badge_alert: "Telegram алярм"
+    badge_alert: "Telegram алярм",
+    twofa_title: "Двухфакторная аутентификация (2FA / TOTP)",
+    twofa_sub: "Защитите панель с помощью одноразовых кодов Google Authenticator.",
+    twofa_status_enabled: "🟢 2FA включена",
+    twofa_status_disabled: "⚪ 2FA отключена",
+    btn_enable_2fa: "🔐 Настроить и включить 2FA",
+    btn_disable_2fa: "🔓 Отключить 2FA",
+    twofa_scan_title: "Сканируйте в приложении Authenticator",
+    twofa_scan_desc: "Отсканируйте этот QR-код в Google Authenticator или введите ключ вручную:",
+    twofa_secret_key: "Секретный ключ:",
+    twofa_enter_code: "Введите 6-значный код подтверждения:",
+    btn_verify_enable: "Подтвердить и включить",
+    copy_secret_success: "Секретный ключ скопирован в буфер!"
   },
   tr: {
     nav_overview: "Genel Bakış",
@@ -514,7 +550,19 @@ const translations = {
     badge_reset_traffic: "Trafik Sıfırla",
     badge_command: "Shell Komutu",
     badge_api: "Özel API",
-    badge_alert: "Telegram Bildirimi"
+    badge_alert: "Telegram Bildirimi",
+    twofa_title: "İki Faktörlü Doğrulama (2FA / TOTP)",
+    twofa_sub: "Google Authenticator veya Microsoft Authenticator ile yönetim panelinizi koruyun.",
+    twofa_status_enabled: "🟢 2FA Aktif",
+    twofa_status_disabled: "⚪ 2FA Devre Dışı",
+    btn_enable_2fa: "🔐 2FA Yapılandır ve Aç",
+    btn_disable_2fa: "🔓 2FA'yı Kapat",
+    twofa_scan_title: "Authenticator Uygulaması ile Tarayın",
+    twofa_scan_desc: "Bu QR kodunu Google Authenticator ile tarayın veya anahtarı manuel girin:",
+    twofa_secret_key: "Gizli Kurulum Anahtarı:",
+    twofa_enter_code: "Uygulamanızdaki 6 haneli onay kodunu girin:",
+    btn_verify_enable: "Doğrula ve 2FA'yı Etkinleştir",
+    copy_secret_success: "Gizli anahtar panoya kopyalandı!"
   },
   zh: {
     nav_overview: "概览大盘",
@@ -643,7 +691,19 @@ const translations = {
     badge_reset_traffic: "重置流量",
     badge_command: "Shell 脚本",
     badge_api: "API 接口",
-    badge_alert: "Telegram 提醒"
+    badge_alert: "Telegram 提醒",
+    twofa_title: "双重身份验证 (2FA / TOTP)",
+    twofa_sub: "使用 Google Authenticator 或 Microsoft Authenticator 提升面板安全性。",
+    twofa_status_enabled: "🟢 2FA 已启用",
+    twofa_status_disabled: "⚪ 2FA 未启用",
+    btn_enable_2fa: "🔐 设置并启用 2FA",
+    btn_disable_2fa: "🔓 停用 2FA",
+    twofa_scan_title: "使用 Authenticator 扫码",
+    twofa_scan_desc: "请使用 Google Authenticator 扫描此二维码，或手动输入密钥：",
+    twofa_secret_key: "设置密钥：",
+    twofa_enter_code: "输入 App 中的 6 位验证码：",
+    btn_verify_enable: "验证并激活 2FA",
+    copy_secret_success: "密钥已复制到剪贴板！"
   }
 };
 
