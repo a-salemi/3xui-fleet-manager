@@ -215,7 +215,21 @@ async def api_list_schedules(_=Depends(get_current_user)):
 
 @app.post("/api/schedules")
 async def api_add_schedule(data: ScheduleEntryCreate, _=Depends(require_operator_or_admin)):
-    schedule = ScheduleEntry(id=str(uuid.uuid4()), enabled=True, **data.model_dump())
+    data_dict = data.model_dump()
+    if not data_dict.get("panel_name"):
+        p = storage.get_panel(data.panel_id)
+        if p:
+            data_dict["panel_name"] = p.name
+        else:
+            panels = storage.get_panels()
+            for p_item in panels:
+                if str(p_item.id).strip() == str(data.panel_id).strip():
+                    data_dict["panel_name"] = p_item.name
+                    break
+            if not data_dict.get("panel_name") and len(panels) == 1:
+                data_dict["panel_name"] = panels[0].name
+
+    schedule = ScheduleEntry(id=str(uuid.uuid4()), enabled=True, **data_dict)
     storage.save_schedule(schedule)
     sched.register_schedule(schedule.id)
     # Immediately check window and sync inbound state
@@ -233,6 +247,11 @@ async def api_update_schedule(schedule_id: str, data: ScheduleEntryUpdate, _=Dep
     for field, value in data.model_dump(exclude_unset=True).items():
         if value is not None:
             updated_data[field] = value
+
+    if not updated_data.get("panel_name") or ("panel_id" in data.model_dump(exclude_unset=True)):
+        p = storage.get_panel(updated_data.get("panel_id"))
+        if p:
+            updated_data["panel_name"] = p.name
 
     updated_schedule = ScheduleEntry(**updated_data)
     storage.save_schedule(updated_schedule)

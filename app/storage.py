@@ -65,24 +65,52 @@ def delete_panel(panel_id: str) -> bool:
 # ─── Schedules ─────────────────────────────────────────────────────────────────
 
 def get_schedules() -> List[ScheduleEntry]:
-    return [ScheduleEntry(**s) for s in _load_json(SCHEDULES_FILE)]
+    raw = _load_json(SCHEDULES_FILE)
+    panels = get_panels()
+    panels_map = {str(p.id).strip(): p.name for p in panels}
+    results = []
+    for s in raw:
+        p_id = str(s.get("panel_id", "")).strip()
+        if not s.get("panel_name"):
+            if p_id in panels_map:
+                s["panel_name"] = panels_map[p_id]
+            elif len(panels) == 1:
+                s["panel_name"] = panels[0].name
+        results.append(ScheduleEntry(**s))
+    return results
 
 
 def get_schedule(schedule_id: str) -> Optional[ScheduleEntry]:
+    target_id = str(schedule_id).strip()
     for s in get_schedules():
-        if s.id == schedule_id:
+        if str(s.id).strip() == target_id:
             return s
     return None
 
 
 def save_schedule(schedule: ScheduleEntry):
+    if not schedule.panel_name:
+        p = get_panel(schedule.panel_id)
+        if p:
+            schedule.panel_name = p.name
+        else:
+            panels = get_panels()
+            for p_item in panels:
+                if str(p_item.id).strip() == str(schedule.panel_id).strip():
+                    schedule.panel_name = p_item.name
+                    break
+            if not schedule.panel_name and len(panels) == 1:
+                schedule.panel_name = panels[0].name
+
     schedules = _load_json(SCHEDULES_FILE)
+    sched_dict = schedule.model_dump()
+    target_id = str(schedule.id).strip()
     for i, s in enumerate(schedules):
-        if s["id"] == schedule.id:
-            schedules[i] = schedule.model_dump()
+        if str(s.get("id")).strip() == target_id:
+            schedules[i] = sched_dict
             _save_json(SCHEDULES_FILE, schedules)
             return
-    schedules.append(schedule.model_dump())
+    schedules.append(sched_dict)
     _save_json(SCHEDULES_FILE, schedules)
 
 

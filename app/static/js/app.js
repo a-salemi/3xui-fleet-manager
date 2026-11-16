@@ -127,9 +127,10 @@ function toggleSidebar(forceState) {
 // ─── Data Initialization ─────────────────────────────────────────────────────
 async function loadAllData() {
   await loadMe();
+  // Load panels first so schedule names and dependencies resolve immediately
+  await loadPanels();
   await Promise.all([
     loadSystemMetrics(),
-    loadPanels(),
     loadSchedules(),
     loadBackendLogs()
   ]);
@@ -188,18 +189,67 @@ async function api(method, path, body) {
   }
 }
 
-// ─── Toast Notifications ─────────────────────────────────────────────────────
-function toast(msg, ok = true) {
+// ─── Apple / iOS Dynamic Island Glass Notifications ─────────────────────────
+function toast(msg, type = true, duration = 3800) {
   const stack = document.getElementById('toastStack');
-  const d = document.createElement('div');
-  d.className = 'toast-msg ' + (ok ? 'ok' : 'err');
-  d.innerHTML = (ok ? '✓ ' : '⚠️ ') + msg;
-  stack.appendChild(d);
-  setTimeout(() => {
-    d.style.opacity = '0';
-    d.style.transform = 'translateY(12px)';
-    setTimeout(() => d.remove(), 300);
-  }, 4000);
+  if (!stack) return;
+
+  // Determine kind: 'ok' (success), 'err' (error), or 'info'
+  let kind = 'ok';
+  if (type === false || type === 'err' || type === 'error') {
+    kind = 'err';
+  } else if (type === 'info' || (type === true && typeof msg === 'string' && (msg.startsWith('Testing') || msg.startsWith('Running') || msg.startsWith('Sending')))) {
+    kind = 'info';
+  } else {
+    kind = 'ok';
+  }
+
+  // Strip leading emojis from msg if already present
+  const cleanMsg = typeof msg === 'string' ? msg.replace(/^[✓⚠️ℹ️❌⚡🟢🔴]\s*/, '').trim() : String(msg);
+
+  // High-precision Apple Glass SVG icons
+  let iconSvg = '';
+  if (kind === 'ok') {
+    iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  } else if (kind === 'err') {
+    iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+  } else {
+    iconSvg = `<svg class="toast-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="38" stroke-dashoffset="14"></circle></svg>`;
+  }
+
+  const item = document.createElement('div');
+  item.className = `toast-apple ${kind}`;
+  item.setAttribute('role', 'alert');
+  item.innerHTML = `
+    <div class="toast-island-icon">${iconSvg}</div>
+    <div class="toast-island-text">${cleanMsg}</div>
+    <button class="toast-island-close" aria-label="Dismiss">&times;</button>
+    <div class="toast-progress-bar" style="animation-duration:${duration}ms;"></div>
+  `;
+
+  const dismiss = () => {
+    if (item.classList.contains('dismissing')) return;
+    item.classList.add('dismissing');
+    setTimeout(() => {
+      if (item.parentNode) item.remove();
+    }, 280);
+  };
+
+  const closeBtn = item.querySelector('.toast-island-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismiss();
+    });
+  }
+
+  stack.appendChild(item);
+
+  let timer = setTimeout(dismiss, duration);
+  item.addEventListener('mouseenter', () => clearTimeout(timer));
+  item.addEventListener('mouseleave', () => {
+    timer = setTimeout(dismiss, 1500);
+  });
 }
 
 // ─── Modal Helpers ───────────────────────────────────────────────────────────
@@ -312,6 +362,9 @@ async function loadPanels() {
   try {
     panels = await api('GET', '/api/panels');
     renderPanels();
+    if (schedules && schedules.length > 0) {
+      renderSchedules();
+    }
     updateMetrics();
   } catch (e) {
     toast('Error loading panels: ' + e.message, false);
@@ -411,14 +464,15 @@ async function deletePanel(id) {
 }
 
 async function testPanel(id) {
-  const p = panels.find(x => x.id === id);
+  const p = panels.find(x => String(x.id).trim() === String(id).trim());
+  const panelName = p ? p.name : 'Panel';
   try {
-    toast(`Testing connection to ${p.name}...`);
+    toast(`Testing connection to ${panelName}...`, 'info');
     const inbounds = await api('GET', `/api/panels/${id}/inbounds`);
-    toast(`✓ Connected to ${p.name}! Found ${inbounds.length} inbound service(s).`);
+    toast(`Connected to ${panelName}! Found ${inbounds.length} inbound service(s).`, 'ok');
     loadBackendLogs();
   } catch (e) {
-    toast(`Connection failed: ${e.message}`, false);
+    toast(`Connection failed: ${e.message}`, 'err');
     loadBackendLogs();
   }
 }
@@ -469,8 +523,11 @@ function renderSchedules() {
   empty.style.display = 'none';
 
   tbody.innerHTML = schedules.map(s => {
-    const p = panels.find(x => x.id === s.panel_id);
-    const panelName = p ? p.name : 'Unknown Panel';
+    let p = panels.find(x => String(x.id).trim() === String(s.panel_id).trim());
+    if (!p && panels.length === 1) {
+      p = panels[0];
+    }
+    const panelName = s.panel_name || (p ? p.name : 'Unknown Panel');
     const isActiveWindow = isScheduleActiveNow(s);
 
     let statusBadge = '';
@@ -624,9 +681,13 @@ async function saveNewSchedule() {
   }
   const opt = sel.options[sel.selectedIndex];
   const btn = document.getElementById('btnSaveSchedule');
+  const pId = document.getElementById('sPanel').value;
+  const pObj = panels.find(x => String(x.id).trim() === String(pId).trim());
+  const panelName = pObj ? pObj.name : '';
 
   const data = {
-    panel_id: document.getElementById('sPanel').value,
+    panel_id: pId,
+    panel_name: panelName,
     inbound_id: parseInt(sel.value),
     inbound_remark: opt.dataset.remark || opt.textContent,
     enable_time: getTimePickerValue('sEn'),
@@ -708,9 +769,13 @@ async function updateSchedule(scheduleId) {
   const sel = document.getElementById('sInbound');
   const opt = sel.options[sel.selectedIndex];
   const btn = document.getElementById('btnUpdateSchedule');
+  const pId = document.getElementById('sPanel').value;
+  const pObj = panels.find(x => String(x.id).trim() === String(pId).trim());
+  const panelName = pObj ? pObj.name : '';
 
   const data = {
-    panel_id: document.getElementById('sPanel').value,
+    panel_id: pId,
+    panel_name: panelName,
     inbound_id: parseInt(sel.value),
     inbound_remark: opt ? (opt.dataset.remark || opt.textContent) : undefined,
     enable_time: getTimePickerValue('sEn'),
@@ -756,13 +821,13 @@ async function deleteSchedule(id) {
 
 async function runNow(id, action) {
   try {
-    toast(`Running manual ${action.toUpperCase()} command...`);
+    toast(`Running manual ${action.toUpperCase()} command...`, 'info');
     await api('POST', `/api/schedules/${id}/run/${action}`);
-    toast(`Inbound ${action === 'enable' ? 'turned ON 🟢' : 'turned OFF 🔴'} successfully!`);
+    toast(`Inbound ${action === 'enable' ? 'turned ON' : 'turned OFF'} successfully!`, 'ok');
     await loadSchedules();
     loadBackendLogs();
   } catch (e) {
-    toast('Command failed: ' + e.message, false);
+    toast('Command failed: ' + e.message, 'err');
     loadBackendLogs();
   }
 }
@@ -893,6 +958,7 @@ async function testTelegramChannel() {
   }
 
   setBtnLoading(btn, true, 'Sending Test...');
+  toast('Sending test notification to Telegram...', 'info');
   try {
     const res = await api('POST', '/api/telegram/test', {
       bot_token: token,
@@ -900,9 +966,9 @@ async function testTelegramChannel() {
       socks_proxy: proxy,
       api_server: apiServer
     });
-    toast('✓ ' + (res.message || 'Test message sent! Check your Telegram.'));
+    toast(res.message || 'Test message sent! Check your Telegram.', 'ok');
   } catch (e) {
-    toast('Telegram test failed: ' + e.message, false);
+    toast('Telegram test failed: ' + e.message, 'err');
   } finally {
     setBtnLoading(btn, false);
   }

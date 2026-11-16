@@ -19,6 +19,7 @@ class ScheduleEntry(BaseModel):
     disable_time: str
     enabled: bool = True
     timezone: str = "Asia/Tehran"
+    panel_name: Optional[str] = ""
 
 
 class PanelConfigCreate(BaseModel):
@@ -35,6 +36,7 @@ class ScheduleEntryCreate(BaseModel):
     enable_time: str
     disable_time: str
     timezone: str = "Asia/Tehran"
+    panel_name: Optional[str] = ""
 
 
 class ScheduleEntryUpdate(BaseModel):
@@ -45,6 +47,7 @@ class ScheduleEntryUpdate(BaseModel):
     disable_time: Optional[str] = None
     timezone: Optional[str] = None
     enabled: Optional[bool] = None
+    panel_name: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
