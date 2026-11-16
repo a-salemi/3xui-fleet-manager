@@ -484,32 +484,39 @@ function renderSchedules() {
 
     return `
       <tr>
-        <td>
-          <div class="inbound-title">
-            <span class="inbound-name">${esc(s.inbound_remark)}</span>
-            <span class="inbound-id-tag">#${s.inbound_id}</span>
+        <td class="col-inbound">
+          <div class="schedule-card-top">
+            <div class="inbound-title">
+              <span class="inbound-name">${esc(s.inbound_remark)}</span>
+              <span class="inbound-id-tag">#${s.inbound_id}</span>
+            </div>
+            <div class="mobile-status-slot">${statusBadge}</div>
           </div>
         </td>
-        <td>
+        <td class="col-panel">
+          <span class="cell-label">${t('th_panel')}:</span>
           <span style="font-weight:600;color:#cbd5e1;">${esc(panelName)}</span>
         </td>
-        <td>
+        <td class="col-window">
+          <span class="cell-label">${t('th_window')}:</span>
           <div class="window-badge">
             <span>${s.enable_time}</span>
             <span class="window-arrow">→</span>
             <span>${s.disable_time}</span>
           </div>
         </td>
-        <td>
+        <td class="col-tz">
+          <span class="cell-label">${t('th_timezone')}:</span>
           <span style="color:var(--text-muted);font-size:12px;">${esc(s.timezone)}</span>
         </td>
-        <td>
+        <td class="col-auto">
+          <span class="cell-label">${t('th_auto')}:</span>
           <span class="toggle-switch ${s.enabled ? 'on' : ''}" onclick="toggleSchedule('${s.id}')"></span>
         </td>
-        <td>
+        <td class="desktop-status-slot">
           ${statusBadge}
         </td>
-        <td>
+        <td class="col-actions">
           <div class="table-actions">
             <button class="btn btn-edit btn-sm" onclick="showEditSchedule('${s.id}')" title="Edit Schedule">✏️ ${t('btn_edit')}</button>
             <button class="btn btn-success btn-sm" onclick="runNow('${s.id}', 'enable')" title="${t('on_now')}">▶ ON</button>
@@ -783,15 +790,29 @@ function renderLogs() {
 
   tbody.innerHTML = backendLogs.map(l => `
     <tr>
-      <td style="color:var(--text-muted);white-space:nowrap;">${esc(l.timestamp)}</td>
-      <td><strong>${esc(l.panel)}</strong></td>
-      <td>${esc(l.inbound)}</td>
-      <td><span class="log-action-tag">${esc(l.action)}</span></td>
-      <td>
+      <td class="log-col-time">
+        <div class="log-top-bar">
+          <span class="log-time-badge">${esc(l.timestamp)}</span>
+          <span class="log-status-tag ${esc(l.status)} mobile-status-slot">${esc(l.status)}</span>
+        </div>
+      </td>
+      <td class="log-col-panel">
+        <span class="cell-label">${t('th_panel')}:</span>
+        <strong>${esc(l.panel)}</strong>
+      </td>
+      <td class="log-col-inbound">
+        <span class="cell-label">${t('th_inbound')}:</span>
+        <span>${esc(l.inbound)}</span>
+      </td>
+      <td class="log-col-action">
+        <span class="cell-label">${t('th_action')}:</span>
+        <span class="log-action-tag">${esc(l.action)}</span>
+      </td>
+      <td class="desktop-status-slot">
         <span class="log-status-tag ${esc(l.status)}">${esc(l.status)}</span>
       </td>
-      <td style="color:var(--text-secondary);max-width:320px;word-break:break-word;">
-        ${esc(l.details)}
+      <td class="log-col-details">
+        <div class="log-details-box">${esc(l.details)}</div>
       </td>
     </tr>
   `).join('');
@@ -937,16 +958,26 @@ function renderUsers() {
 
     return `
       <tr>
-        <td>
-          <strong>${esc(u.username)}</strong>
-          ${isSelf ? '<span style="font-size:11px;color:var(--accent-cyan);margin-left:6px;">(You)</span>' : ''}
+        <td class="user-col-name">
+          <div class="user-top-bar">
+            <div>
+              <strong>${esc(u.username)}</strong>
+              ${isSelf ? '<span style="font-size:11px;color:var(--accent-cyan);margin-left:6px;">(You)</span>' : ''}
+            </div>
+            <span class="btn ${roleClass} btn-sm mobile-role-slot" style="cursor:default;padding:2px 8px;font-size:11px;">
+              ${esc(u.role.toUpperCase())}
+            </span>
+          </div>
         </td>
-        <td>
+        <td class="desktop-role-slot">
           <span class="btn ${roleClass} btn-sm" style="cursor:default;padding:2px 8px;font-size:11px;">
             ${esc(u.role.toUpperCase())}
           </span>
         </td>
-        <td style="color:var(--text-muted);font-size:12px;">${esc(u.created_at || '—')}</td>
+        <td>
+          <span class="cell-label">${t('th_created')}:</span>
+          <span style="color:var(--text-muted);font-size:12px;">${esc(u.created_at || '—')}</span>
+        </td>
         <td>
           <div class="table-actions">
             <button class="btn btn-ghost btn-sm" onclick="showChangePasswordModal('${u.id}', '${esc(u.username)}')">🔑 Password</button>

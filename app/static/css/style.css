@@ -879,6 +879,43 @@ body {
   border: 1px solid rgba(244, 63, 94, 0.25);
 }
 
+/* ─── Table Mobile/Desktop Responsive Slot Helpers ─────────────────────────── */
+.cell-label {
+  display: none;
+}
+.mobile-status-slot {
+  display: none;
+}
+.desktop-status-slot {
+  display: table-cell;
+}
+.mobile-role-slot {
+  display: none;
+}
+.desktop-role-slot {
+  display: table-cell;
+}
+.schedule-card-top,
+.log-top-bar,
+.user-top-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.log-time-badge {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  direction: ltr !important;
+  unicode-bidi: isolate;
+}
+.log-details-box {
+  color: var(--text-secondary);
+  font-size: 13px;
+  word-break: break-word;
+}
+
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -1705,6 +1742,151 @@ body {
   .table-actions {
     flex-wrap: wrap !important;
     gap: 4px !important;
+  }
+
+  /* ─── Mobile Table Card Transformation (Fixes Mobile Overflow) ───────────── */
+  .table-responsive {
+    overflow-x: visible !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .modern-table thead {
+    display: none !important;
+  }
+
+  .modern-table,
+  .modern-table tbody,
+  .modern-table tr,
+  .modern-table td {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .modern-table {
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .modern-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .modern-table tr {
+    background: rgba(18, 20, 31, 0.8) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .modern-table tr:hover td {
+    background: transparent !important;
+  }
+
+  .modern-table td {
+    padding: 0 !important;
+    border-bottom: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    text-align: inherit !important;
+    gap: 8px !important;
+    font-size: 13px !important;
+  }
+
+  /* Schedule Cards on Mobile */
+  .schedule-card-top {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .mobile-status-slot {
+    display: block !important;
+  }
+
+  .desktop-status-slot {
+    display: none !important;
+  }
+
+  .mobile-role-slot {
+    display: inline-flex !important;
+  }
+
+  .desktop-role-slot {
+    display: none !important;
+  }
+
+  .cell-label {
+    display: inline-block !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+  }
+
+  .col-actions {
+    margin-top: 4px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    width: 100% !important;
+  }
+
+  .col-actions .table-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .col-actions .table-actions .btn {
+    width: 100% !important;
+    padding: 8px 4px !important;
+    font-size: 11px !important;
+    justify-content: center !important;
+  }
+
+  /* Log Cards on Mobile */
+  .log-top-bar {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .log-details-box {
+    width: 100% !important;
+    padding: 8px 10px !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 6px !important;
+    font-size: 11.5px !important;
+    color: var(--text-secondary) !important;
+    word-break: break-word !important;
+    font-family: var(--font-mono) !important;
+    direction: ltr !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-top-bar {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
   }
 
   .modal-dialog {
