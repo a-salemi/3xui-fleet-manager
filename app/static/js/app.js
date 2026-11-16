@@ -117,11 +117,11 @@ function updateRouteViewTitles() {
 
 function toggleSidebar(forceState) {
   const sb = document.getElementById('sidebar');
-  if (forceState !== undefined) {
-    sb.classList.toggle('open', forceState);
-  } else {
-    sb.classList.toggle('open');
-  }
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen = (forceState !== undefined) ? forceState : !sb.classList.contains('open');
+  sb.classList.toggle('open', isOpen);
+  if (backdrop) backdrop.classList.toggle('open', isOpen);
+  document.body.classList.toggle('sidebar-locked', isOpen);
 }
 
 // ─── Data Initialization ─────────────────────────────────────────────────────
@@ -235,7 +235,10 @@ async function loadSystemMetrics() {
     document.getElementById('cpuBadge').textContent = `${m.cpu_percent}%`;
     document.getElementById('cpuFill').style.width = `${Math.min(m.cpu_percent, 100)}%`;
     document.getElementById('cpuCores').textContent = `${m.cpu_cores} Cores`;
-    document.getElementById('cpuLoad').textContent = `Load: ${m.load_avg.join(', ')}`;
+    const loadStr = (m.load_avg && m.load_avg.length) 
+      ? m.load_avg.map(x => Number(x).toFixed(2)).join(' / ') 
+      : '0.00 / 0.00 / 0.00';
+    document.getElementById('cpuLoad').textContent = `Load: ${loadStr}`;
 
     // RAM
     document.getElementById('ramBadge').textContent = `${m.ram_percent}%`;

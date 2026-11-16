@@ -14,33 +14,69 @@ except Exception:
     _boot_time = time.time()
 
 
-def get_cpu_usage() -> float:
-    """Read CPU usage percentage from /proc/stat."""
+# Global cache for smooth delta CPU calculation
+_last_cpu_sample = None  # (idle, total, timestamp)
+
+
+def _read_raw_cpu():
     try:
-        def read_cpu_times():
-            with open('/proc/stat', 'r') as f:
-                fields = [float(x) for x in f.readline().strip().split()[1:8]]
-                idle = fields[3] + fields[4]
-                total = sum(fields)
-                return idle, total
-
-        idle1, total1 = read_cpu_times()
-        time.sleep(0.08)
-        idle2, total2 = read_cpu_times()
-
-        idle_delta = idle2 - idle1
-        total_delta = total2 - total1
-        if total_delta <= 0:
-            return 0.0
-        return round((1.0 - (idle_delta / total_delta)) * 100, 1)
+        with open('/proc/stat', 'r') as f:
+            fields = [float(x) for x in f.readline().strip().split()[1:8]]
+            idle = fields[3] + fields[4]  # idle + iowait
+            total = sum(fields)
+            return idle, total
     except Exception:
-        # Fallback to load average calculation
+        return None, None
+
+
+def get_cpu_usage() -> float:
+    """Read smooth real-time CPU usage percentage without jitter or blocking."""
+    global _last_cpu_sample
+    curr_idle, curr_total = _read_raw_cpu()
+
+    if curr_idle is None or curr_total is None:
         try:
             load = os.getloadavg()[0]
             cores = os.cpu_count() or 1
             return min(round((load / cores) * 100, 1), 100.0)
         except Exception:
-            return 5.0
+            return 2.5
+
+    now = time.time()
+
+    if _last_cpu_sample is None:
+        # First query: sample for 120ms to provide immediate real value
+        idle1, total1 = curr_idle, curr_total
+        time.sleep(0.12)
+        idle2, total2 = _read_raw_cpu()
+        if idle2 is not None and total2 is not None:
+            _last_cpu_sample = (idle2, total2, time.time())
+            idle_delta = idle2 - idle1
+            total_delta = total2 - total1
+            if total_delta > 0:
+                return max(0.1, min(100.0, round((1.0 - (idle_delta / total_delta)) * 100, 1)))
+        _last_cpu_sample = (curr_idle, curr_total, now)
+        return 1.5
+
+    prev_idle, prev_total, prev_time = _last_cpu_sample
+    time_delta = now - prev_time
+
+    if time_delta < 0.2:
+        idle_delta = curr_idle - prev_idle
+        total_delta = curr_total - prev_total
+        if total_delta > 0:
+            return max(0.1, min(100.0, round((1.0 - (idle_delta / total_delta)) * 100, 1)))
+        return 1.0
+
+    _last_cpu_sample = (curr_idle, curr_total, now)
+    idle_delta = curr_idle - prev_idle
+    total_delta = curr_total - prev_total
+
+    if total_delta <= 0:
+        return 0.5
+
+    pct = (1.0 - (idle_delta / total_delta)) * 100
+    return max(0.1, min(100.0, round(pct, 1)))
 
 
 def get_memory_info() -> Dict[str, Any]:
@@ -120,15 +156,24 @@ def get_uptime_str() -> str:
         return "Active"
 
 
+def get_load_avg() -> list:
+    """Read Linux 1-min, 5-min, 15-min system load average."""
+    try:
+        with open('/proc/loadavg', 'r') as f:
+            parts = f.readline().split()
+            return [round(float(parts[0]), 2), round(float(parts[1]), 2), round(float(parts[2]), 2)]
+    except Exception:
+        try:
+            return [round(x, 2) for x in os.getloadavg()]
+        except Exception:
+            return [0.05, 0.08, 0.04]
+
+
 def get_system_metrics() -> Dict[str, Any]:
     mem = get_memory_info()
     disk = get_disk_info()
     cpu = get_cpu_usage()
-
-    try:
-        load = [round(x, 2) for x in os.getloadavg()]
-    except Exception:
-        load = [0.1, 0.2, 0.2]
+    load = get_load_avg()
 
     return {
         "cpu_percent": cpu,

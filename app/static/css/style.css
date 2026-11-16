@@ -111,9 +111,19 @@ body {
   color: var(--text-muted);
 }
 
+/* ─── Desktop App Container ─────────────────────────────────────────────────── */
+.mobile-nav {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
 .app-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
 /* ─── Sidebar ───────────────────────────────────────────────────────────────── */
@@ -1458,96 +1468,252 @@ body {
 
 /* ─── Responsive Media Queries (Mobile & Tablet) ────────────────────────────── */
 @media (max-width: 868px) {
-  .sidebar {
-    transform: translateX(-100%);
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
   }
 
-  .sidebar.open {
-    transform: translateX(0);
-    box-shadow: 10px 0 50px rgba(0, 0, 0, 0.8);
+  body.sidebar-locked {
+    overflow: hidden !important;
   }
 
-  .main-content {
-    margin-left: 0;
-    padding: 0 16px 24px 16px;
+  .app-container {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: auto !important;
+    overflow-x: hidden !important;
   }
 
+  /* Fixed Dedicated Mobile Topbar */
   .mobile-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 18px;
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 90;
-    margin-bottom: 16px;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 16px !important;
+    background: rgba(15, 17, 26, 0.96) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    z-index: 990 !important;
   }
 
   .mobile-nav .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .mobile-nav .logo-orb {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    border-radius: 9px;
+  }
+
+  .mobile-nav .brand-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
   }
 
   .mobile-menu-btn {
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding: 6px;
+    justify-content: center;
+    gap: 4.5px;
+    padding: 7px 9px;
+    transition: var(--transition);
+  }
+
+  .mobile-menu-btn:active {
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .mobile-menu-btn span {
     display: block;
-    width: 22px;
+    width: 20px;
     height: 2px;
     background: #fff;
     border-radius: 2px;
   }
 
-  .global-topbar {
-    padding: 12px 0;
-    margin-bottom: 18px;
+  /* Mobile Sidebar & Overlay Backdrop */
+  .sidebar-backdrop {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 1090;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
   }
 
-  .global-topbar #langDropdown {
-    display: none;
+  .sidebar-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
   }
 
-  .section-title-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    max-width: 82vw !important;
+    z-index: 1100 !important;
+    transform: translateX(-100%) !important;
+    box-shadow: none;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  .form-grid-2 {
-    grid-template-columns: 1fr;
-  }
-
-  .toolbar-search {
-    max-width: 100%;
-  }
-
-  .card-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .table-actions {
-    flex-wrap: wrap;
+  .sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 10px 0 50px rgba(0, 0, 0, 0.9) !important;
   }
 
   [dir="rtl"] .sidebar {
-    transform: translateX(100%);
+    left: auto !important;
+    right: 0 !important;
+    transform: translateX(100%) !important;
   }
+
   [dir="rtl"] .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+    box-shadow: -10px 0 50px rgba(0, 0, 0, 0.9) !important;
   }
+
+  /* Main Viewport on Mobile */
+  .main-content {
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 10px 14px 28px 14px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
   [dir="rtl"] .main-content {
-    margin-right: 0;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Global Topbar Streamlined on Mobile */
+  .global-topbar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 0 12px 0 !important;
+    margin-bottom: 14px !important;
+    gap: 8px !important;
+  }
+
+  .global-topbar .crumb-root,
+  .global-topbar .crumb-separator {
+    display: none !important;
+  }
+
+  .global-topbar .crumb-current {
+    font-size: 13.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 180px !important;
+  }
+
+  .global-topbar #langDropdown {
+    display: none !important;
+  }
+
+  .system-clock-badge {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* View Header & Titles */
+  .section-title-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .view-title {
+    font-size: 19px !important;
+    line-height: 1.3 !important;
+  }
+
+  .view-subtitle {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Telemetry Grid (1 column on phones) */
+  .telemetry-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .gauge-card {
+    padding: 16px 14px !important;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-top: 16px !important;
+  }
+
+  .metric-card {
+    padding: 14px 16px !important;
+  }
+
+  /* Forms & Cards */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .card-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .toolbar-search {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .table-actions {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .modal-dialog {
+    max-width: 95vw !important;
+    margin: 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .modal-content {
+    padding: 16px !important;
   }
 }
