@@ -297,28 +297,73 @@ async def api_ping_panel(panel_id: str, _=Depends(get_current_user)):
         return {"ok": False, "error": str(e)}
 
 
+@app.post("/api/panels/{panel_id}/xray/{action}")
+async def api_panel_xray_action(panel_id: str, action: str, _=Depends(require_operator_or_admin)):
+    if action not in ("restart", "stop", "start"):
+        raise HTTPException(400, "Invalid action. Must be restart, stop, or start.")
+    panel = storage.get_panel(panel_id)
+    if not panel:
+        raise HTTPException(404, "Panel not found")
+    client = XUIClient(panel.url, panel.token, panel.path_prefix)
+    try:
+        if action == "restart":
+            await client.restart_xray_service()
+        elif action == "stop":
+            await client.stop_xray_service()
+        elif action == "start":
+            await client.start_xray_service()
+        storage.add_log(panel.name, "Xray Core", action.upper(), "SUCCESS", f"Manual {action} executed")
+        return {"ok": True, "message": f"Xray service {action}ed successfully."}
+    except Exception as e:
+        storage.add_log(panel.name, "Xray Core", action.upper(), "FAILED", str(e))
+        raise HTTPException(502, detail=str(e))
+
+
 # ─── API: Schedules ───────────────────────────────────────────────────────────
 
 @app.get("/api/schedules")
 async def api_list_schedules(_=Depends(get_current_user)):
-    return [s.model_dump() for s in storage.get_schedules()]
+    schedules = storage.get_schedules()
+    panels = storage.get_panels()
+    panel_map = {p.id: p.name for p in panels}
+    res = []
+    for s in schedules:
+        dump = s.model_dump()
+        if not dump.get("panel_name") or dump.get("panel_name") in ("Unknown Panel", "Unknown"):
+            if dump.get("panel_id") == "all":
+                dump["panel_name"] = "All Panels (Fleet)"
+            elif dump.get("panel_id") in panel_map:
+                dump["panel_name"] = panel_map[dump["panel_id"]]
+            elif len(panels) == 1:
+                dump["panel_name"] = panels[0].name
+            elif dump.get("action_type") == "custom_command":
+                dump["panel_name"] = "Host Server"
+            elif dump.get("action_type") == "telegram_alert":
+                dump["panel_name"] = "Telegram Bot"
+        res.append(dump)
+    return res
 
 
 @app.post("/api/schedules")
 async def api_add_schedule(data: ScheduleEntryCreate, _=Depends(require_operator_or_admin)):
     data_dict = data.model_dump()
     if not data_dict.get("panel_name"):
-        p = storage.get_panel(data.panel_id)
-        if p:
-            data_dict["panel_name"] = p.name
+        if data.panel_id == "all":
+            data_dict["panel_name"] = "All Panels (Fleet)"
+        elif data.panel_id:
+            p = storage.get_panel(data.panel_id)
+            if p:
+                data_dict["panel_name"] = p.name
+            else:
+                panels = storage.get_panels()
+                for p_item in panels:
+                    if str(p_item.id).strip() == str(data.panel_id).strip():
+                        data_dict["panel_name"] = p_item.name
+                        break
+                if not data_dict.get("panel_name") and len(panels) == 1:
+                    data_dict["panel_name"] = panels[0].name
         else:
-            panels = storage.get_panels()
-            for p_item in panels:
-                if str(p_item.id).strip() == str(data.panel_id).strip():
-                    data_dict["panel_name"] = p_item.name
-                    break
-            if not data_dict.get("panel_name") and len(panels) == 1:
-                data_dict["panel_name"] = panels[0].name
+            data_dict["panel_name"] = "Host Server"
 
     schedule = ScheduleEntry(id=str(uuid.uuid4()), enabled=True, **data_dict)
     storage.save_schedule(schedule)
@@ -339,10 +384,16 @@ async def api_update_schedule(schedule_id: str, data: ScheduleEntryUpdate, _=Dep
         if value is not None:
             updated_data[field] = value
 
-    if not updated_data.get("panel_name") or ("panel_id" in data.model_dump(exclude_unset=True)):
-        p = storage.get_panel(updated_data.get("panel_id"))
-        if p:
-            updated_data["panel_name"] = p.name
+    if "panel_id" in data.model_dump(exclude_unset=True) or not updated_data.get("panel_name"):
+        target_pid = updated_data.get("panel_id")
+        if target_pid == "all":
+            updated_data["panel_name"] = "All Panels (Fleet)"
+        elif target_pid:
+            p = storage.get_panel(target_pid)
+            if p:
+                updated_data["panel_name"] = p.name
+        else:
+            updated_data["panel_name"] = "Host Server"
 
     updated_schedule = ScheduleEntry(**updated_data)
     storage.save_schedule(updated_schedule)
@@ -375,8 +426,8 @@ async def api_delete_schedule(schedule_id: str, _=Depends(require_operator_or_ad
 
 @app.post("/api/schedules/{schedule_id}/run/{action}")
 async def api_run_now(schedule_id: str, action: str, _=Depends(require_operator_or_admin)):
-    if action not in ("enable", "disable"):
-        raise HTTPException(400, "Action must be enable or disable")
+    if action not in ("enable", "disable", "run", "stop", "start"):
+        raise HTTPException(400, "Invalid action. Must be enable, disable, run, stop, or start.")
     await sched._run_action(schedule_id, action, is_sync=False)
     return {"ok": True}
 

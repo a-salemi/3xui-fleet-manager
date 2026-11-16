@@ -421,6 +421,7 @@ function renderPanels() {
         </div>
       </div>
       <div class="panel-footer-actions">
+        <button class="btn btn-xray-restart" onclick="restartPanelXray('${p.id}')" title="${t('btn_restart_xray')}">${t('btn_restart_xray')}</button>
         <button class="btn btn-ghost btn-sm" onclick="testPanel('${p.id}')">🔌 ${t('btn_test') || 'Test'}</button>
         <button class="btn btn-danger btn-sm" onclick="deletePanel('${p.id}')">🗑 ${t('btn_delete') || 'Delete'}</button>
       </div>
@@ -429,6 +430,21 @@ function renderPanels() {
 
   // Background latency heartbeat
   panels.forEach(p => pingPanel(p.id, false));
+}
+
+async function restartPanelXray(id) {
+  const p = panels.find(x => String(x.id).trim() === String(id).trim());
+  const panelName = p ? p.name : 'Panel';
+  if (!confirm(`Are you sure you want to refresh/restart Xray service on ${panelName}? Active proxy sessions will reconnect in <1 second.`)) return;
+  toast(`Restarting Xray service on ${panelName}...`, 'info');
+  try {
+    const res = await api('POST', `/api/panels/${id}/xray/restart`);
+    toast(res.message || `Xray restarted on ${panelName}!`, 'ok');
+    loadBackendLogs();
+  } catch (e) {
+    toast(`Xray restart failed: ${e.message}`, 'err');
+    loadBackendLogs();
+  }
 }
 
 async function pingPanel(id, notify = true) {
@@ -622,28 +638,152 @@ function renderSchedules() {
     if (!p && panels.length === 1) {
       p = panels[0];
     }
-    const panelName = s.panel_name || (p ? p.name : 'Unknown Panel');
+    const actionType = s.action_type || 'inbound_window';
+
+    let panelName = s.panel_name || (p ? p.name : '');
+    if (!panelName || panelName === 'Unknown Panel') {
+      if (s.panel_id === 'all') panelName = t('panel_all_fleet');
+      else if (actionType === 'custom_command') panelName = t('panel_host_server');
+      else if (actionType === 'telegram_alert') panelName = 'Telegram Bot';
+      else if (p) panelName = p.name;
+      else if (panels.length === 1) panelName = panels[0].name;
+      else panelName = s.panel_id || 'Panel';
+    }
+
     const isActiveWindow = isScheduleActiveNow(s);
+
+    let taskBadge = '';
+    if (actionType === 'inbound_window') {
+      taskBadge = `<span class="task-pill inbound">⚡ ${t('badge_inbound')}</span>`;
+    } else if (actionType === 'xray_restart') {
+      taskBadge = `<span class="task-pill xray">🔄 ${t('badge_xray_restart')}</span>`;
+    } else if (actionType === 'xray_window') {
+      taskBadge = `<span class="task-pill xray">🛑 ${t('badge_xray_window')}</span>`;
+    } else if (actionType === 'reset_traffic') {
+      taskBadge = `<span class="task-pill reset">📊 ${t('badge_reset_traffic')}</span>`;
+    } else if (actionType === 'custom_command') {
+      taskBadge = `<span class="task-pill command">💻 ${t('badge_command')}</span>`;
+    } else if (actionType === 'custom_api') {
+      taskBadge = `<span class="task-pill api">🌐 ${t('badge_api')}</span>`;
+    } else if (actionType === 'telegram_alert') {
+      taskBadge = `<span class="task-pill alert">✈️ ${t('badge_alert')}</span>`;
+    }
 
     let statusBadge = '';
     if (!s.enabled) {
       statusBadge = `<span class="status-pill disabled">${t('status_paused')}</span>`;
-    } else if (isActiveWindow) {
-      statusBadge = `<span class="status-pill active">${t('status_active')}</span>`;
+    } else if (actionType === 'inbound_window' || actionType === 'xray_window') {
+      if (isActiveWindow) {
+        statusBadge = `<span class="status-pill active">${t('status_active')}</span>`;
+      } else {
+        statusBadge = `<span class="status-pill idle">${t('status_idle')}</span>`;
+      }
     } else {
-      statusBadge = `<span class="status-pill idle">${t('status_idle')}</span>`;
+      statusBadge = `<span class="status-pill active">⏰ ACTIVE RULE</span>`;
+    }
+
+    let inboundCellHtml = '';
+    if (actionType === 'inbound_window') {
+      inboundCellHtml = `
+        <div class="inbound-title">
+          <span class="inbound-name">${esc(s.inbound_remark || 'Inbound')}</span>
+          <span class="inbound-id-tag">#${s.inbound_id}</span>
+          <button class="btn-micro" onclick="showInboundStats('${s.id}')" title="${t('btn_traffic_stats')}">📊</button>
+          <button class="btn-micro" onclick="checkSchedulePort('${s.id}')" title="${t('btn_port_check')}">🔍 Port</button>
+        </div>
+      `;
+    } else if (actionType === 'xray_restart') {
+      inboundCellHtml = `
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="inbound-name">${esc(s.task_name || 'Xray Core Auto-Restart')}</span>
+          ${taskBadge}
+        </div>
+      `;
+    } else if (actionType === 'xray_window') {
+      inboundCellHtml = `
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="inbound-name">${esc(s.task_name || 'Xray Maintenance Window')}</span>
+          ${taskBadge}
+        </div>
+      `;
+    } else if (actionType === 'reset_traffic') {
+      inboundCellHtml = `
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="inbound-name">${esc(s.task_name || ('Reset Traffic (' + (s.inbound_remark || 'All Inbounds') + ')'))}</span>
+          ${taskBadge}
+        </div>
+      `;
+    } else if (actionType === 'custom_command') {
+      inboundCellHtml = `
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="inbound-name">${esc(s.task_name || 'Shell Script')}</span>
+            ${taskBadge}
+          </div>
+          <code style="font-size:11px;color:#a78bfa;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;width:fit-content;direction:ltr;">${esc((s.command || '').slice(0, 35))}${(s.command && s.command.length > 35) ? '...' : ''}</code>
+        </div>
+      `;
+    } else if (actionType === 'custom_api') {
+      inboundCellHtml = `
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="inbound-name">${esc(s.task_name || 'Custom 3X-UI API')}</span>
+            ${taskBadge}
+          </div>
+          <code style="font-size:11px;color:#fb7185;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;width:fit-content;direction:ltr;">${esc(s.api_method || 'POST')} ${esc(s.api_endpoint || '/')}</code>
+        </div>
+      `;
+    } else if (actionType === 'telegram_alert') {
+      inboundCellHtml = `
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="inbound-name">${esc(s.task_name || 'Telegram Reminder')}</span>
+            ${taskBadge}
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);">${esc((s.message || '').slice(0, 45))}${(s.message && s.message.length > 45) ? '...' : ''}</div>
+        </div>
+      `;
+    }
+
+    let timeBadgeHtml = '';
+    if (actionType === 'inbound_window' || actionType === 'xray_window') {
+      timeBadgeHtml = `
+        <div class="window-badge">
+          <span>${s.enable_time}</span>
+          <span class="window-arrow">→</span>
+          <span>${s.disable_time || '--:--'}</span>
+        </div>
+      `;
+    } else {
+      timeBadgeHtml = `
+        <div class="window-badge">
+          <span>⏰ ${s.enable_time}</span>
+        </div>
+      `;
+    }
+
+    let actionBtnsHtml = '';
+    if (actionType === 'inbound_window') {
+      actionBtnsHtml = `
+        <button class="btn btn-success btn-sm" onclick="runNow('${s.id}', 'enable')" title="${t('on_now')}">▶ ON</button>
+        <button class="btn btn-ghost btn-sm" onclick="runNow('${s.id}', 'disable')" title="${t('off_now')}">⏹ OFF</button>
+      `;
+    } else if (actionType === 'xray_window') {
+      actionBtnsHtml = `
+        <button class="btn btn-danger btn-sm" onclick="runNow('${s.id}', 'stop')" title="Stop Core">🛑 Stop</button>
+        <button class="btn btn-success btn-sm" onclick="runNow('${s.id}', 'start')" title="Start Core">🟢 Start</button>
+      `;
+    } else {
+      actionBtnsHtml = `
+        <button class="btn btn-primary btn-sm" onclick="runNow('${s.id}', 'run')" title="${t('btn_run_task')}">▶ ${t('btn_run_task')}</button>
+      `;
     }
 
     return `
       <tr>
         <td class="col-inbound">
           <div class="schedule-card-top">
-            <div class="inbound-title">
-              <span class="inbound-name">${esc(s.inbound_remark)}</span>
-              <span class="inbound-id-tag">#${s.inbound_id}</span>
-              <button class="btn-micro" onclick="showInboundStats('${s.id}')" title="${t('btn_traffic_stats')}">📊</button>
-              <button class="btn-micro" onclick="checkSchedulePort('${s.id}')" title="${t('btn_port_check')}">🔍 Port</button>
-            </div>
+            ${inboundCellHtml}
             <div class="mobile-status-slot">${statusBadge}</div>
           </div>
         </td>
@@ -654,11 +794,7 @@ function renderSchedules() {
         <td class="col-window">
           <span class="cell-label">${t('th_window')}:</span>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            <div class="window-badge">
-              <span>${s.enable_time}</span>
-              <span class="window-arrow">→</span>
-              <span>${s.disable_time}</span>
-            </div>
+            ${timeBadgeHtml}
             <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
               <span>📅</span> <span>${formatScheduleDays(s.days)}</span>
             </div>
@@ -678,8 +814,7 @@ function renderSchedules() {
         <td class="col-actions">
           <div class="table-actions">
             <button class="btn btn-edit btn-sm" onclick="showEditSchedule('${s.id}')" title="Edit Schedule">✏️ ${t('btn_edit')}</button>
-            <button class="btn btn-success btn-sm" onclick="runNow('${s.id}', 'enable')" title="${t('on_now')}">▶ ON</button>
-            <button class="btn btn-ghost btn-sm" onclick="runNow('${s.id}', 'disable')" title="${t('off_now')}">⏹ OFF</button>
+            ${actionBtnsHtml}
             <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')" title="${t('btn_delete')}">🗑 ${t('btn_delete')}</button>
           </div>
         </td>
@@ -751,36 +886,90 @@ function getSelectedDaysFromContainer(containerId) {
 }
 
 function showAddSchedule() {
-  if (!panels.length) {
-    toast('Please add at least one panel first!', false);
-    return;
-  }
+  const panelOptions = [
+    `<option value="all">${t('panel_all_fleet')}</option>`,
+    ...panels.map(p => `<option value="${p.id}">${esc(p.name)}</option>`)
+  ].join('');
 
-  const panelOptions = panels.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-
-  openModal('Create Inbound Schedule', 'AUTO TRIGGER', `
+  openModal(t('btn_new_schedule') || 'Create Schedule', 'AUTO TASK', `
     <div class="form-field">
-      <label>Target 3X-UI Panel</label>
-      <select class="form-input" id="sPanel" onchange="loadInboundSelect()">${panelOptions}</select>
+      <label>${t('task_type')}</label>
+      <select class="form-input" id="sActionType" onchange="onScheduleActionTypeChange()">
+        <option value="inbound_window" selected>⚡ ${t('task_inbound_window')}</option>
+        <option value="xray_restart">🔄 ${t('task_xray_restart')}</option>
+        <option value="xray_window">🛑 ${t('task_xray_window')}</option>
+        <option value="reset_traffic">📊 ${t('task_reset_traffic')}</option>
+        <option value="custom_command">💻 ${t('task_custom_command')}</option>
+        <option value="custom_api">🌐 ${t('task_custom_api')}</option>
+        <option value="telegram_alert">✈️ ${t('task_telegram_alert')}</option>
+      </select>
     </div>
 
-    <div class="form-field">
-      <label>Target Inbound</label>
+    <div class="form-field" id="secTaskName" style="display:none;">
+      <label>${t('field_task_name')}</label>
+      <input class="form-input" id="sTaskName" placeholder="e.g. Daily Xray Refresh at 4 AM"/>
+    </div>
+
+    <div class="form-field" id="secPanel">
+      <label>${t('th_panel')}</label>
+      <select class="form-input" id="sPanel" onchange="onSchedulePanelChange()">${panelOptions}</select>
+    </div>
+
+    <div class="form-field" id="secInbound">
+      <label>${t('th_inbound')}</label>
       <select class="form-input" id="sInbound"><option>Loading inbounds...</option></select>
     </div>
 
-    <div class="form-grid-2">
+    <div class="form-field" id="secCommand" style="display:none;">
+      <label>${t('field_shell_command')}</label>
+      <textarea class="form-input" id="sCommand" rows="3" placeholder="systemctl restart xray&#10;sync && echo 3 > /proc/sys/vm/drop_caches" style="font-family:var(--font-mono);direction:ltr;"></textarea>
+      <span class="field-hint">Executed asynchronously via Linux bash subprocess with stdout/stderr logged & sent to Telegram.</span>
+    </div>
+
+    <div id="secApi" style="display:none;">
+      <div class="form-grid-2">
+        <div class="form-field">
+          <label>${t('field_api_method')}</label>
+          <select class="form-input" id="sApiMethod">
+            <option value="POST" selected>POST</option>
+            <option value="GET">GET</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>${t('field_api_endpoint')}</label>
+          <input class="form-input" id="sApiEndpoint" placeholder="/server/restartXrayService" style="direction:ltr;font-family:var(--font-mono);"/>
+        </div>
+      </div>
       <div class="form-field">
-        <label>Turn ON Time (24h)</label>
+        <label>${t('field_api_payload')}</label>
+        <textarea class="form-input" id="sApiPayload" rows="2" placeholder='{"id": 1}' style="font-family:var(--font-mono);direction:ltr;"></textarea>
+      </div>
+    </div>
+
+    <div class="form-field" id="secMessage" style="display:none;">
+      <label>${t('field_message')}</label>
+      <textarea class="form-input" id="sMessage" rows="3" placeholder="🔔 Attention: Weekly server maintenance starting in 5 minutes!"></textarea>
+    </div>
+
+    <div class="form-grid-2" id="secDualTime">
+      <div class="form-field">
+        <label id="lblTime1">${t('th_window')} - START</label>
         ${renderTimePickerHTML('sEn', '02:00')}
       </div>
       <div class="form-field">
-        <label>Turn OFF Time (24h)</label>
+        <label id="lblTime2">${t('th_window')} - END</label>
         ${renderTimePickerHTML('sDis', '07:00')}
       </div>
     </div>
 
-    <div class="time-presets">
+    <div class="form-field" id="secSingleTime" style="display:none;">
+      <label>${t('field_trigger_time')}</label>
+      ${renderTimePickerHTML('sSingle', '04:00')}
+    </div>
+
+    <div class="time-presets" id="secPresets">
       <span style="font-size:11px;color:var(--text-muted);align-self:center;">Presets:</span>
       <span class="preset-chip" onclick="applyPreset('02','00','07','00')">🌙 Nightly (02:00 - 07:00)</span>
       <span class="preset-chip" onclick="applyPreset('01','00','06','00')">01:00 - 06:00</span>
@@ -790,7 +979,7 @@ function showAddSchedule() {
     ${renderDayChipsHTML('newScheduleDays', [0, 1, 2, 3, 4, 5, 6])}
 
     <div class="form-field" style="margin-top:16px;">
-      <label>Timezone</label>
+      <label>${t('th_timezone')}</label>
       <select class="form-input" id="sTz">
         <option value="Asia/Tehran" selected>Asia/Tehran (Iran Standard Time UTC+3:30)</option>
         <option value="UTC">UTC (Universal Coordinated Time)</option>
@@ -800,68 +989,230 @@ function showAddSchedule() {
       </select>
     </div>
 
-    <button class="btn btn-primary" id="btnSaveSchedule" style="width:100%;margin-top:12px;" onclick="saveNewSchedule()">
-      Create Schedule & Auto-Sync State
+    <button class="btn btn-primary" id="btnSaveSchedule" style="width:100%;margin-top:14px;" onclick="saveNewSchedule()">
+      ${t('btn_save')} & ${t('th_auto')}
     </button>
   `);
 
-  loadInboundSelect();
+  onScheduleActionTypeChange();
 }
 
-async function loadInboundSelect(selectedInboundId = null) {
-  const panelId = document.getElementById('sPanel').value;
+function onScheduleActionTypeChange() {
+  const type = document.getElementById('sActionType').value;
+  const secTaskName = document.getElementById('secTaskName');
+  const secPanel = document.getElementById('secPanel');
+  const secInbound = document.getElementById('secInbound');
+  const secCommand = document.getElementById('secCommand');
+  const secApi = document.getElementById('secApi');
+  const secMessage = document.getElementById('secMessage');
+  const secDualTime = document.getElementById('secDualTime');
+  const secSingleTime = document.getElementById('secSingleTime');
+  const secPresets = document.getElementById('secPresets');
+  const lblTime1 = document.getElementById('lblTime1');
+  const lblTime2 = document.getElementById('lblTime2');
+  const pSel = document.getElementById('sPanel');
+
+  if (type === 'inbound_window') {
+    if (secTaskName) secTaskName.style.display = 'none';
+    if (secPanel) secPanel.style.display = 'block';
+    if (secInbound) secInbound.style.display = 'block';
+    if (secCommand) secCommand.style.display = 'none';
+    if (secApi) secApi.style.display = 'none';
+    if (secMessage) secMessage.style.display = 'none';
+    if (secDualTime) secDualTime.style.display = 'grid';
+    if (secSingleTime) secSingleTime.style.display = 'none';
+    if (secPresets) secPresets.style.display = 'flex';
+    if (lblTime1) lblTime1.textContent = (currentLang === 'fa') ? 'ساعت روشن شدن (۲۴ ساعته)' : 'Turn ON Time (24h)';
+    if (lblTime2) lblTime2.textContent = (currentLang === 'fa') ? 'ساعت خاموش شدن (۲۴ ساعته)' : 'Turn OFF Time (24h)';
+
+    if (pSel && pSel.value === 'all' && panels.length > 0) {
+      pSel.value = panels[0].id;
+    }
+    loadInboundSelect();
+  } else if (type === 'xray_restart') {
+    if (secTaskName) secTaskName.style.display = 'block';
+    if (secPanel) secPanel.style.display = 'block';
+    if (secInbound) secInbound.style.display = 'none';
+    if (secCommand) secCommand.style.display = 'none';
+    if (secApi) secApi.style.display = 'none';
+    if (secMessage) secMessage.style.display = 'none';
+    if (secDualTime) secDualTime.style.display = 'none';
+    if (secSingleTime) secSingleTime.style.display = 'block';
+    if (secPresets) secPresets.style.display = 'none';
+  } else if (type === 'xray_window') {
+    if (secTaskName) secTaskName.style.display = 'block';
+    if (secPanel) secPanel.style.display = 'block';
+    if (secInbound) secInbound.style.display = 'none';
+    if (secCommand) secCommand.style.display = 'none';
+    if (secApi) secApi.style.display = 'none';
+    if (secMessage) secMessage.style.display = 'none';
+    if (secDualTime) secDualTime.style.display = 'grid';
+    if (secSingleTime) secSingleTime.style.display = 'none';
+    if (secPresets) secPresets.style.display = 'none';
+    if (lblTime1) lblTime1.textContent = (currentLang === 'fa') ? 'ساعت متوقف شدن هسته (Stop)' : 'Core Stop Time (24h)';
+    if (lblTime2) lblTime2.textContent = (currentLang === 'fa') ? 'ساعت شروع به کار مجدد (Start)' : 'Core Start Time (24h)';
+  } else if (type === 'reset_traffic') {
+    if (secTaskName) secTaskName.style.display = 'block';
+    if (secPanel) secPanel.style.display = 'block';
+    if (secInbound) secInbound.style.display = 'block';
+    if (secCommand) secCommand.style.display = 'none';
+    if (secApi) secApi.style.display = 'none';
+    if (secMessage) secMessage.style.display = 'none';
+    if (secDualTime) secDualTime.style.display = 'none';
+    if (secSingleTime) secSingleTime.style.display = 'block';
+    if (secPresets) secPresets.style.display = 'none';
+    loadInboundSelect(null, true);
+  } else if (type === 'custom_command') {
+    if (secTaskName) secTaskName.style.display = 'block';
+    if (secPanel) secPanel.style.display = 'none';
+    if (secInbound) secInbound.style.display = 'none';
+    if (secCommand) secCommand.style.display = 'block';
+    if (secApi) secApi.style.display = 'none';
+    if (secMessage) secMessage.style.display = 'none';
+    if (secDualTime) secDualTime.style.display = 'none';
+    if (secSingleTime) secSingleTime.style.display = 'block';
+    if (secPresets) secPresets.style.display = 'none';
+  } else if (type === 'custom_api') {
+    if (secTaskName) secTaskName.style.display = 'block';
+    if (secPanel) secPanel.style.display = 'block';
+    if (secInbound) secInbound.style.display = 'none';
+    if (secCommand) secCommand.style.display = 'none';
+    if (secApi) secApi.style.display = 'block';
+    if (secMessage) secMessage.style.display = 'none';
+    if (secDualTime) secDualTime.style.display = 'none';
+    if (secSingleTime) secSingleTime.style.display = 'block';
+    if (secPresets) secPresets.style.display = 'none';
+  } else if (type === 'telegram_alert') {
+    if (secTaskName) secTaskName.style.display = 'block';
+    if (secPanel) secPanel.style.display = 'none';
+    if (secInbound) secInbound.style.display = 'none';
+    if (secCommand) secCommand.style.display = 'none';
+    if (secApi) secApi.style.display = 'none';
+    if (secMessage) secMessage.style.display = 'block';
+    if (secDualTime) secDualTime.style.display = 'none';
+    if (secSingleTime) secSingleTime.style.display = 'block';
+    if (secPresets) secPresets.style.display = 'none';
+  }
+}
+
+function onSchedulePanelChange() {
+  const type = document.getElementById('sActionType') ? document.getElementById('sActionType').value : 'inbound_window';
+  if (type === 'inbound_window') {
+    loadInboundSelect();
+  } else if (type === 'reset_traffic') {
+    loadInboundSelect(null, true);
+  }
+}
+
+async function loadInboundSelect(selectedInboundId = null, includeAllChoice = false) {
+  const pSel = document.getElementById('sPanel');
+  if (!pSel) return;
+  const panelId = pSel.value;
   const sel = document.getElementById('sInbound');
+  if (!sel) return;
+
+  if (panelId === 'all') {
+    sel.innerHTML = `<option value="">${t('task_all_inbounds')}</option>`;
+    return;
+  }
+
   sel.innerHTML = '<option>Loading inbounds from panel...</option>';
 
   try {
     const inbounds = await api('GET', `/api/panels/${panelId}/inbounds`);
-    if (!inbounds.length) {
+    let opts = '';
+    if (includeAllChoice) {
+      opts += `<option value="" ${!selectedInboundId ? 'selected' : ''}>${t('task_all_inbounds')}</option>`;
+    }
+    if (!inbounds.length && !includeAllChoice) {
       sel.innerHTML = '<option value="">No inbounds configured on this panel</option>';
       return;
     }
-    sel.innerHTML = inbounds.map(i => `
+    opts += inbounds.map(i => `
       <option value="${i.id}" data-remark="${esc(i.remark)}" ${selectedInboundId == i.id ? 'selected' : ''}>
         ${esc(i.remark)} (Port ${i.port}) ${i.enable ? '🟢 Enabled' : '🔴 Disabled'}
       </option>
     `).join('');
+    sel.innerHTML = opts;
   } catch (e) {
-    sel.innerHTML = `<option value="">Error fetching inbounds: ${e.message}</option>`;
-    toast('Error loading inbounds: ' + e.message, false);
+    if (includeAllChoice) {
+      sel.innerHTML = `<option value="">${t('task_all_inbounds')}</option>`;
+    } else {
+      sel.innerHTML = `<option value="">Error fetching inbounds: ${e.message}</option>`;
+    }
   }
 }
 
 async function saveNewSchedule() {
-  const sel = document.getElementById('sInbound');
-  if (!sel.value) {
-    toast('Please select an inbound', false);
-    return;
-  }
-  const opt = sel.options[sel.selectedIndex];
+  const type = document.getElementById('sActionType').value;
   const btn = document.getElementById('btnSaveSchedule');
-  const pId = document.getElementById('sPanel').value;
-  const pObj = panels.find(x => String(x.id).trim() === String(pId).trim());
-  const panelName = pObj ? pObj.name : '';
+
+  let pId = document.getElementById('sPanel') ? document.getElementById('sPanel').value : '';
+  let panelName = '';
+  if (pId === 'all') {
+    panelName = t('panel_all_fleet');
+  } else if (type === 'custom_command') {
+    pId = '';
+    panelName = t('panel_host_server');
+  } else if (type === 'telegram_alert') {
+    pId = '';
+    panelName = 'Telegram Bot';
+  } else {
+    const pObj = panels.find(x => String(x.id).trim() === String(pId).trim());
+    panelName = pObj ? pObj.name : '';
+  }
+
+  let inboundId = null;
+  let inboundRemark = '';
+  if (type === 'inbound_window' || type === 'reset_traffic') {
+    const sel = document.getElementById('sInbound');
+    if (sel && sel.value) {
+      inboundId = parseInt(sel.value);
+      const opt = sel.options[sel.selectedIndex];
+      inboundRemark = opt ? (opt.dataset.remark || opt.textContent) : '';
+    } else if (type === 'inbound_window') {
+      toast('Please select an inbound service', false);
+      return;
+    }
+  }
+
+  let enableTime = '02:00';
+  let disableTime = '07:00';
+  if (type === 'inbound_window' || type === 'xray_window') {
+    enableTime = getTimePickerValue('sEn');
+    disableTime = getTimePickerValue('sDis');
+  } else {
+    enableTime = getTimePickerValue('sSingle');
+    disableTime = '';
+  }
 
   const data = {
+    action_type: type,
+    task_name: (document.getElementById('sTaskName') ? document.getElementById('sTaskName').value.trim() : '') || '',
     panel_id: pId,
     panel_name: panelName,
-    inbound_id: parseInt(sel.value),
-    inbound_remark: opt.dataset.remark || opt.textContent,
-    enable_time: getTimePickerValue('sEn'),
-    disable_time: getTimePickerValue('sDis'),
+    inbound_id: inboundId,
+    inbound_remark: inboundRemark,
+    enable_time: enableTime,
+    disable_time: disableTime,
     timezone: document.getElementById('sTz').value,
-    days: getSelectedDaysFromContainer('newScheduleDays')
+    days: getSelectedDaysFromContainer('newScheduleDays'),
+    command: (document.getElementById('sCommand') ? document.getElementById('sCommand').value.trim() : '') || '',
+    api_method: (document.getElementById('sApiMethod') ? document.getElementById('sApiMethod').value : 'POST') || 'POST',
+    api_endpoint: (document.getElementById('sApiEndpoint') ? document.getElementById('sApiEndpoint').value.trim() : '') || '',
+    api_payload: (document.getElementById('sApiPayload') ? document.getElementById('sApiPayload').value.trim() : '') || '',
+    message: (document.getElementById('sMessage') ? document.getElementById('sMessage').value.trim() : '') || ''
   };
 
-  setBtnLoading(btn, true, 'Creating & Syncing...');
+  setBtnLoading(btn, true, 'Creating Task...');
   try {
     await api('POST', '/api/schedules', data);
     closeModal();
-    toast('Schedule created! Current window state applied.');
+    toast('Automation task scheduled successfully!');
     await loadSchedules();
     loadBackendLogs();
   } catch (e) {
-    toast('Error creating schedule: ' + e.message, false);
+    toast('Error creating task: ' + e.message, false);
   } finally {
     setBtnLoading(btn, false);
   }
@@ -872,33 +1223,92 @@ function showEditSchedule(scheduleId) {
   const s = schedules.find(x => x.id === scheduleId);
   if (!s) return;
 
-  const panelOptions = panels.map(p => `
-    <option value="${p.id}" ${p.id === s.panel_id ? 'selected' : ''}>${esc(p.name)}</option>
-  `).join('');
+  const actionType = s.action_type || 'inbound_window';
+  const panelOptions = [
+    `<option value="all" ${s.panel_id === 'all' ? 'selected' : ''}>${t('panel_all_fleet')}</option>`,
+    ...panels.map(p => `
+      <option value="${p.id}" ${p.id === s.panel_id ? 'selected' : ''}>${esc(p.name)}</option>
+    `)
+  ].join('');
 
-  openModal('Edit Schedule', 'UPDATE CONFIG', `
+  openModal(t('btn_edit') || 'Edit Schedule', 'UPDATE TASK', `
     <div class="form-field">
-      <label>Target 3X-UI Panel</label>
-      <select class="form-input" id="sPanel" onchange="loadInboundSelect()">${panelOptions}</select>
+      <label>${t('task_type')}</label>
+      <select class="form-input" id="sActionType" onchange="onScheduleActionTypeChange()">
+        <option value="inbound_window" ${actionType === 'inbound_window' ? 'selected' : ''}>⚡ ${t('task_inbound_window')}</option>
+        <option value="xray_restart" ${actionType === 'xray_restart' ? 'selected' : ''}>🔄 ${t('task_xray_restart')}</option>
+        <option value="xray_window" ${actionType === 'xray_window' ? 'selected' : ''}>🛑 ${t('task_xray_window')}</option>
+        <option value="reset_traffic" ${actionType === 'reset_traffic' ? 'selected' : ''}>📊 ${t('task_reset_traffic')}</option>
+        <option value="custom_command" ${actionType === 'custom_command' ? 'selected' : ''}>💻 ${t('task_custom_command')}</option>
+        <option value="custom_api" ${actionType === 'custom_api' ? 'selected' : ''}>🌐 ${t('task_custom_api')}</option>
+        <option value="telegram_alert" ${actionType === 'telegram_alert' ? 'selected' : ''}>✈️ ${t('task_telegram_alert')}</option>
+      </select>
     </div>
 
-    <div class="form-field">
-      <label>Target Inbound</label>
+    <div class="form-field" id="secTaskName">
+      <label>${t('field_task_name')}</label>
+      <input class="form-input" id="sTaskName" value="${esc(s.task_name || '')}" placeholder="e.g. Daily Xray Refresh at 4 AM"/>
+    </div>
+
+    <div class="form-field" id="secPanel">
+      <label>${t('th_panel')}</label>
+      <select class="form-input" id="sPanel" onchange="onSchedulePanelChange()">${panelOptions}</select>
+    </div>
+
+    <div class="form-field" id="secInbound">
+      <label>${t('th_inbound')}</label>
       <select class="form-input" id="sInbound"><option>Loading...</option></select>
     </div>
 
-    <div class="form-grid-2">
-      <div class="form-field">
-        <label>Turn ON Time (24h)</label>
-        ${renderTimePickerHTML('sEn', s.enable_time)}
+    <div class="form-field" id="secCommand" style="display:none;">
+      <label>${t('field_shell_command')}</label>
+      <textarea class="form-input" id="sCommand" rows="3" style="font-family:var(--font-mono);direction:ltr;">${esc(s.command || '')}</textarea>
+    </div>
+
+    <div id="secApi" style="display:none;">
+      <div class="form-grid-2">
+        <div class="form-field">
+          <label>${t('field_api_method')}</label>
+          <select class="form-input" id="sApiMethod">
+            <option value="POST" ${s.api_method === 'POST' ? 'selected' : ''}>POST</option>
+            <option value="GET" ${s.api_method === 'GET' ? 'selected' : ''}>GET</option>
+            <option value="PUT" ${s.api_method === 'PUT' ? 'selected' : ''}>PUT</option>
+            <option value="DELETE" ${s.api_method === 'DELETE' ? 'selected' : ''}>DELETE</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>${t('field_api_endpoint')}</label>
+          <input class="form-input" id="sApiEndpoint" value="${esc(s.api_endpoint || '')}" placeholder="/server/restartXrayService" style="direction:ltr;font-family:var(--font-mono);"/>
+        </div>
       </div>
       <div class="form-field">
-        <label>Turn OFF Time (24h)</label>
-        ${renderTimePickerHTML('sDis', s.disable_time)}
+        <label>${t('field_api_payload')}</label>
+        <textarea class="form-input" id="sApiPayload" rows="2" style="font-family:var(--font-mono);direction:ltr;">${esc(s.api_payload || '')}</textarea>
       </div>
     </div>
 
-    <div class="time-presets">
+    <div class="form-field" id="secMessage" style="display:none;">
+      <label>${t('field_message')}</label>
+      <textarea class="form-input" id="sMessage" rows="3">${esc(s.message || '')}</textarea>
+    </div>
+
+    <div class="form-grid-2" id="secDualTime">
+      <div class="form-field">
+        <label id="lblTime1">${t('th_window')} - START</label>
+        ${renderTimePickerHTML('sEn', s.enable_time || '02:00')}
+      </div>
+      <div class="form-field">
+        <label id="lblTime2">${t('th_window')} - END</label>
+        ${renderTimePickerHTML('sDis', s.disable_time || '07:00')}
+      </div>
+    </div>
+
+    <div class="form-field" id="secSingleTime" style="display:none;">
+      <label>${t('field_trigger_time')}</label>
+      ${renderTimePickerHTML('sSingle', s.enable_time || '04:00')}
+    </div>
+
+    <div class="time-presets" id="secPresets">
       <span style="font-size:11px;color:var(--text-muted);align-self:center;">Presets:</span>
       <span class="preset-chip" onclick="applyPreset('02','00','07','00')">🌙 Nightly (02:00 - 07:00)</span>
       <span class="preset-chip" onclick="applyPreset('01','00','06','00')">01:00 - 06:00</span>
@@ -908,51 +1318,99 @@ function showEditSchedule(scheduleId) {
     ${renderDayChipsHTML('editScheduleDays', s.days || [0, 1, 2, 3, 4, 5, 6])}
 
     <div class="form-field" style="margin-top:16px;">
-      <label>Timezone</label>
+      <label>${t('th_timezone')}</label>
       <select class="form-input" id="sTz">
         <option value="Asia/Tehran" ${s.timezone === 'Asia/Tehran' ? 'selected' : ''}>Asia/Tehran (Iran Standard Time UTC+3:30)</option>
         <option value="UTC" ${s.timezone === 'UTC' ? 'selected' : ''}>UTC</option>
         <option value="Asia/Dubai" ${s.timezone === 'Asia/Dubai' ? 'selected' : ''}>Asia/Dubai (UTC+4)</option>
         <option value="Europe/Istanbul" ${s.timezone === 'Europe/Istanbul' ? 'selected' : ''}>Europe/Istanbul (UTC+3)</option>
+        <option value="Europe/Berlin" ${s.timezone === 'Europe/Berlin' ? 'selected' : ''}>Europe/Berlin (CET)</option>
       </select>
     </div>
 
-    <button class="btn btn-primary" id="btnUpdateSchedule" style="width:100%;margin-top:12px;" onclick="updateSchedule('${s.id}')">
-      Update Schedule & Re-Sync State
+    <button class="btn btn-primary" id="btnUpdateSchedule" style="width:100%;margin-top:14px;" onclick="updateSchedule('${s.id}')">
+      ${t('btn_save')} & ${t('th_auto')}
     </button>
   `);
 
-  loadInboundSelect(s.inbound_id);
+  onScheduleActionTypeChange();
+  if (actionType === 'inbound_window') {
+    loadInboundSelect(s.inbound_id, false);
+  } else if (actionType === 'reset_traffic') {
+    loadInboundSelect(s.inbound_id, true);
+  }
 }
 
 async function updateSchedule(scheduleId) {
-  const sel = document.getElementById('sInbound');
-  const opt = sel.options[sel.selectedIndex];
+  const type = document.getElementById('sActionType').value;
   const btn = document.getElementById('btnUpdateSchedule');
-  const pId = document.getElementById('sPanel').value;
-  const pObj = panels.find(x => String(x.id).trim() === String(pId).trim());
-  const panelName = pObj ? pObj.name : '';
+
+  let pId = document.getElementById('sPanel') ? document.getElementById('sPanel').value : '';
+  let panelName = '';
+  if (pId === 'all') {
+    panelName = t('panel_all_fleet');
+  } else if (type === 'custom_command') {
+    pId = '';
+    panelName = t('panel_host_server');
+  } else if (type === 'telegram_alert') {
+    pId = '';
+    panelName = 'Telegram Bot';
+  } else {
+    const pObj = panels.find(x => String(x.id).trim() === String(pId).trim());
+    panelName = pObj ? pObj.name : '';
+  }
+
+  let inboundId = null;
+  let inboundRemark = '';
+  if (type === 'inbound_window' || type === 'reset_traffic') {
+    const sel = document.getElementById('sInbound');
+    if (sel && sel.value) {
+      inboundId = parseInt(sel.value);
+      const opt = sel.options[sel.selectedIndex];
+      inboundRemark = opt ? (opt.dataset.remark || opt.textContent) : '';
+    } else if (type === 'inbound_window') {
+      toast('Please select an inbound service', false);
+      return;
+    }
+  }
+
+  let enableTime = '02:00';
+  let disableTime = '07:00';
+  if (type === 'inbound_window' || type === 'xray_window') {
+    enableTime = getTimePickerValue('sEn');
+    disableTime = getTimePickerValue('sDis');
+  } else {
+    enableTime = getTimePickerValue('sSingle');
+    disableTime = '';
+  }
 
   const data = {
+    action_type: type,
+    task_name: (document.getElementById('sTaskName') ? document.getElementById('sTaskName').value.trim() : '') || '',
     panel_id: pId,
     panel_name: panelName,
-    inbound_id: parseInt(sel.value),
-    inbound_remark: opt ? (opt.dataset.remark || opt.textContent) : undefined,
-    enable_time: getTimePickerValue('sEn'),
-    disable_time: getTimePickerValue('sDis'),
+    inbound_id: inboundId,
+    inbound_remark: inboundRemark,
+    enable_time: enableTime,
+    disable_time: disableTime,
     timezone: document.getElementById('sTz').value,
-    days: getSelectedDaysFromContainer('editScheduleDays')
+    days: getSelectedDaysFromContainer('editScheduleDays'),
+    command: (document.getElementById('sCommand') ? document.getElementById('sCommand').value.trim() : '') || '',
+    api_method: (document.getElementById('sApiMethod') ? document.getElementById('sApiMethod').value : 'POST') || 'POST',
+    api_endpoint: (document.getElementById('sApiEndpoint') ? document.getElementById('sApiEndpoint').value.trim() : '') || '',
+    api_payload: (document.getElementById('sApiPayload') ? document.getElementById('sApiPayload').value.trim() : '') || '',
+    message: (document.getElementById('sMessage') ? document.getElementById('sMessage').value.trim() : '') || ''
   };
 
-  setBtnLoading(btn, true, 'Updating & Syncing...');
+  setBtnLoading(btn, true, 'Updating Task...');
   try {
     await api('PUT', `/api/schedules/${scheduleId}`, data);
     closeModal();
-    toast('Schedule updated! Inbound state re-synchronized.');
+    toast('Task updated & re-scheduled successfully!');
     await loadSchedules();
     loadBackendLogs();
   } catch (e) {
-    toast('Error updating schedule: ' + e.message, false);
+    toast('Error updating task: ' + e.message, false);
   } finally {
     setBtnLoading(btn, false);
   }
@@ -982,13 +1440,14 @@ async function deleteSchedule(id) {
 
 async function runNow(id, action) {
   try {
-    toast(`Running manual ${action.toUpperCase()} command...`, 'info');
+    const actLabel = (action === 'enable' ? 'ON' : (action === 'disable' ? 'OFF' : (action === 'stop' ? 'STOP' : (action === 'start' ? 'START' : 'RUN'))));
+    toast(`Running manual ${actLabel} execution...`, 'info');
     await api('POST', `/api/schedules/${id}/run/${action}`);
-    toast(`Inbound ${action === 'enable' ? 'turned ON' : 'turned OFF'} successfully!`, 'ok');
+    toast(`Task ${actLabel} executed successfully!`, 'ok');
     await loadSchedules();
     loadBackendLogs();
   } catch (e) {
-    toast('Command failed: ' + e.message, 'err');
+    toast('Execution failed: ' + e.message, 'err');
     loadBackendLogs();
   }
 }

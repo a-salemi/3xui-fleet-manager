@@ -12,15 +12,22 @@ class PanelConfig(BaseModel):
 
 class ScheduleEntry(BaseModel):
     id: str
-    panel_id: str
-    inbound_id: int
-    inbound_remark: str
-    enable_time: str
-    disable_time: str
+    action_type: str = "inbound_window"
+    task_name: Optional[str] = ""
+    panel_id: Optional[str] = ""
+    panel_name: Optional[str] = ""
+    inbound_id: Optional[int] = None
+    inbound_remark: Optional[str] = ""
+    enable_time: str = "02:00"
+    disable_time: Optional[str] = "07:00"
     enabled: bool = True
     timezone: str = "Asia/Tehran"
-    panel_name: Optional[str] = ""
     days: List[int] = [0, 1, 2, 3, 4, 5, 6]
+    command: Optional[str] = ""
+    api_method: Optional[str] = "POST"
+    api_endpoint: Optional[str] = ""
+    api_payload: Optional[str] = ""
+    message: Optional[str] = ""
 
 
 class PanelConfigCreate(BaseModel):
@@ -31,26 +38,40 @@ class PanelConfigCreate(BaseModel):
 
 
 class ScheduleEntryCreate(BaseModel):
-    panel_id: str
-    inbound_id: int
-    inbound_remark: str
-    enable_time: str
-    disable_time: str
-    timezone: str = "Asia/Tehran"
+    action_type: Optional[str] = "inbound_window"
+    task_name: Optional[str] = ""
+    panel_id: Optional[str] = ""
     panel_name: Optional[str] = ""
+    inbound_id: Optional[int] = None
+    inbound_remark: Optional[str] = ""
+    enable_time: str
+    disable_time: Optional[str] = ""
+    timezone: str = "Asia/Tehran"
     days: Optional[List[int]] = [0, 1, 2, 3, 4, 5, 6]
+    command: Optional[str] = ""
+    api_method: Optional[str] = "POST"
+    api_endpoint: Optional[str] = ""
+    api_payload: Optional[str] = ""
+    message: Optional[str] = ""
 
 
 class ScheduleEntryUpdate(BaseModel):
+    action_type: Optional[str] = None
+    task_name: Optional[str] = None
     panel_id: Optional[str] = None
+    panel_name: Optional[str] = None
     inbound_id: Optional[int] = None
     inbound_remark: Optional[str] = None
     enable_time: Optional[str] = None
     disable_time: Optional[str] = None
     timezone: Optional[str] = None
     enabled: Optional[bool] = None
-    panel_name: Optional[str] = None
     days: Optional[List[int]] = None
+    command: Optional[str] = None
+    api_method: Optional[str] = None
+    api_endpoint: Optional[str] = None
+    api_payload: Optional[str] = None
+    message: Optional[str] = None
 
 
 class LoginRequest(BaseModel):

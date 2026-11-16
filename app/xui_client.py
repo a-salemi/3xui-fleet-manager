@@ -92,3 +92,93 @@ class XUIClient:
             if data.get("success"):
                 return True
             raise ValueError(data.get("msg", "Failed to update inbound"))
+
+    async def restart_xray_service(self) -> bool:
+        """Restarts the Xray core service on target panel."""
+        endpoints = [
+            self._api("/server/restartXrayService"),
+            f"{self.base_url}{self.path_prefix}/server/restartXrayService",
+            f"{self.base_url}/server/restartXrayService"
+        ]
+        return await self._try_post_endpoints(endpoints, "Restart Xray")
+
+    async def stop_xray_service(self) -> bool:
+        """Stops the Xray core service on target panel."""
+        endpoints = [
+            self._api("/server/stopXrayService"),
+            f"{self.base_url}{self.path_prefix}/server/stopXrayService",
+            f"{self.base_url}/server/stopXrayService"
+        ]
+        return await self._try_post_endpoints(endpoints, "Stop Xray")
+
+    async def start_xray_service(self) -> bool:
+        """Starts the Xray core service on target panel."""
+        endpoints = [
+            self._api("/server/startXrayService"),
+            f"{self.base_url}{self.path_prefix}/server/startXrayService",
+            f"{self.base_url}/server/startXrayService"
+        ]
+        return await self._try_post_endpoints(endpoints, "Start Xray")
+
+    async def reset_all_traffics(self) -> bool:
+        """Resets all inbounds traffic counters on target panel."""
+        endpoints = [
+            self._api("/inbounds/resetAllTraffics"),
+            f"{self.base_url}{self.path_prefix}/inbounds/resetAllTraffics",
+            f"{self.base_url}/inbounds/resetAllTraffics"
+        ]
+        return await self._try_post_endpoints(endpoints, "Reset All Traffics")
+
+    async def reset_inbound_traffics(self, inbound_id: int) -> bool:
+        """Resets traffic for a specific inbound."""
+        endpoints = [
+            self._api(f"/inbounds/resetAllClientTraffics/{inbound_id}"),
+            f"{self.base_url}{self.path_prefix}/inbounds/resetAllClientTraffics/{inbound_id}",
+            f"{self.base_url}/inbounds/resetAllClientTraffics/{inbound_id}"
+        ]
+        return await self._try_post_endpoints(endpoints, f"Reset Inbound {inbound_id} Traffic")
+
+    async def _try_post_endpoints(self, endpoints: List[str], action_desc: str) -> bool:
+        async with self._get_client() as client:
+            last_err = None
+            for ep in endpoints:
+                try:
+                    resp = await client.post(ep)
+                    if resp.status_code in (200, 204):
+                        data = resp.json() if resp.text else {}
+                        if data.get("success", True):
+                            return True
+                except Exception as e:
+                    last_err = e
+            if last_err:
+                raise ValueError(f"{action_desc} failed: {str(last_err)}")
+            return True
+
+    async def custom_api_request(self, method: str, endpoint: str, payload: Optional[Any] = None) -> Any:
+        """Executes a custom API request to 3X-UI."""
+        ep = endpoint.strip()
+        if not ep.startswith("http"):
+            if not ep.startswith("/"):
+                ep = "/" + ep
+            url = f"{self.base_url}{self.path_prefix}{ep}" if not ep.startswith("/api") else f"{self.base_url}{ep}"
+        else:
+            url = ep
+
+        async with self._get_client() as client:
+            m = method.strip().upper()
+            if m == "GET":
+                resp = await client.get(url, params=payload if isinstance(payload, dict) else None)
+            elif m == "POST":
+                resp = await client.post(url, json=payload if payload else None)
+            elif m == "PUT":
+                resp = await client.put(url, json=payload if payload else None)
+            elif m == "DELETE":
+                resp = await client.delete(url)
+            else:
+                resp = await client.request(m, url, json=payload if payload else None)
+
+            resp.raise_for_status()
+            try:
+                return resp.json()
+            except Exception:
+                return {"text": resp.text, "status_code": resp.status_code}
