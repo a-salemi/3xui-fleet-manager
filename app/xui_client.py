@@ -37,6 +37,16 @@ class XUIClient:
             headers={"Content-Type": "application/json", "Accept": "application/json"}
         )
 
+    async def ping(self) -> float:
+        """Measure round-trip API latency in milliseconds."""
+        import time
+        start = time.perf_counter()
+        async with self._get_client() as client:
+            resp = await client.get(self._api("/inbounds/list"))
+            resp.raise_for_status()
+            elapsed_ms = (time.perf_counter() - start) * 1000.0
+            return round(elapsed_ms, 1)
+
     async def test_connection(self) -> Dict[str, Any]:
         async with self._get_client() as client:
             resp = await client.get(self._api("/inbounds/list"))

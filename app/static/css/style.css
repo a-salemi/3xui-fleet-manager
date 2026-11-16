@@ -40,6 +40,110 @@
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ─── Light Mode Theme ──────────────────────────────────────────────────────── */
+html[data-theme="light"],
+body[data-theme="light"] {
+  --bg-core: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: #f1f5f9;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(124, 58, 237, 0.6);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0891b2 100%);
+  --glow-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
+}
+
+html[data-theme="light"] body {
+  background-color: var(--bg-core);
+  color: var(--text-primary);
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(6, 182, 212, 0.06), transparent);
+}
+
+html[data-theme="light"] .sidebar,
+html[data-theme="light"] .global-topbar,
+html[data-theme="light"] .mobile-nav {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .brand-title,
+html[data-theme="light"] .view-title,
+html[data-theme="light"] .gauge-val,
+html[data-theme="light"] .inbound-name,
+html[data-theme="light"] .panel-title-text,
+html[data-theme="light"] .modal-head h3,
+html[data-theme="light"] .metric-val {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .nav-link {
+  color: #475569;
+}
+
+html[data-theme="light"] .nav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #0f172a;
+}
+
+html[data-theme="light"] .nav-link.active {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+html[data-theme="light"] .modern-table th {
+  background: rgba(0, 0, 0, 0.03);
+  color: #64748b;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .modern-table td {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="light"] .modern-table tr:hover td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+html[data-theme="light"] .form-input,
+html[data-theme="light"] .toolbar-search input {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+html[data-theme="light"] .modal-dialog {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="light"] .toast-apple {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.15), 0 0 20px -2px rgba(139, 92, 246, 0.15);
+}
+
+html[data-theme="light"] .toast-island-text {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .toast-island-close {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="light"] .toast-island-close:hover {
+  color: #000;
+  background: rgba(0, 0, 0, 0.06);
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-core);
@@ -1669,6 +1773,202 @@ body.rtl .toast-progress-bar {
   direction: ltr !important;
   unicode-bidi: isolate;
   display: inline-flex;
+}
+
+/* ─── Theme Toggle Button ───────────────────────────────────────────────────── */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 17px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.25);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+/* ─── Day-of-Week Selection Chips ───────────────────────────────────────────── */
+.day-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.day-chip {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.day-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.day-chip.active {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: rgba(139, 92, 246, 0.6);
+  color: #c084fc;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+}
+
+.day-preset-btn {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.day-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* ─── Micro Buttons (Stats & Port Test) ─────────────────────────────────────── */
+.btn-micro {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-micro:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-micro:active {
+  transform: translateY(0);
+}
+
+/* ─── Panel Ping & Heartbeat Badge ──────────────────────────────────────────── */
+.panel-ping-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.panel-ping-badge:hover {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #38bdf8;
+}
+
+.panel-ping-badge.online {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.panel-ping-badge.degraded {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.panel-ping-badge.offline {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fb7185;
+}
+
+/* ─── Backup & Restore Card ─────────────────────────────────────────────────── */
+.backup-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.backup-btn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+html[dir="rtl"] .backup-btn-card,
+body.rtl .backup-btn-card {
+  text-align: right;
+}
+
+.backup-btn-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.backup-btn-card .btn-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backup-btn-card .btn-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 /* ─── Responsive Media Queries (Mobile & Tablet) ────────────────────────────── */

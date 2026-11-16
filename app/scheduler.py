@@ -2,6 +2,7 @@ import logging
 import asyncio
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from typing import List, Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app import storage
@@ -16,7 +17,7 @@ def _make_job_id(schedule_id: str, action: str) -> str:
     return f"{schedule_id}_{action}"
 
 
-def is_time_in_range(enable_time: str, disable_time: str, tz_name: str = "Asia/Tehran") -> bool:
+def is_time_in_range(enable_time: str, disable_time: str, tz_name: str = "Asia/Tehran", days: Optional[List[int]] = None) -> bool:
     try:
         tz = ZoneInfo(tz_name)
     except Exception:
@@ -24,6 +25,7 @@ def is_time_in_range(enable_time: str, disable_time: str, tz_name: str = "Asia/T
 
     now = datetime.now(tz)
     cur_mins = now.hour * 60 + now.minute
+    today_weekday = now.weekday()  # 0 = Monday ... 6 = Sunday
 
     try:
         eh, em = map(int, enable_time.split(":"))
@@ -37,10 +39,26 @@ def is_time_in_range(enable_time: str, disable_time: str, tz_name: str = "Asia/T
     if en_mins == dis_mins:
         return False
 
+    active_days = days if (days and len(days) > 0) else [0, 1, 2, 3, 4, 5, 6]
+
     if en_mins < dis_mins:
+        if len(active_days) < 7 and today_weekday not in active_days:
+            return False
         return en_mins <= cur_mins < dis_mins
     else:
-        return cur_mins >= en_mins or cur_mins < dis_mins
+        # Crosses midnight (e.g. 23:00 to 07:00)
+        if cur_mins >= en_mins:
+            # Active window started today
+            if len(active_days) < 7 and today_weekday not in active_days:
+                return False
+            return True
+        elif cur_mins < dis_mins:
+            # Active window started yesterday
+            yesterday_weekday = (today_weekday - 1) % 7
+            if len(active_days) < 7 and yesterday_weekday not in active_days:
+                return False
+            return True
+        return False
 
 
 async def _run_action(schedule_id: str, action: str, is_sync: bool = False):
@@ -100,13 +118,17 @@ async def sync_schedule_state(schedule_id: str):
     if not schedule or not schedule.enabled:
         return
 
-    should_be_enabled = is_time_in_range(schedule.enable_time, schedule.disable_time, schedule.timezone)
+    days = schedule.days if getattr(schedule, "days", None) else [0, 1, 2, 3, 4, 5, 6]
+    should_be_enabled = is_time_in_range(schedule.enable_time, schedule.disable_time, schedule.timezone, days)
     action = "enable" if should_be_enabled else "disable"
     await _run_action(schedule_id, action, is_sync=True)
 
 
-def _parse_cron(time_str: str, tz: str):
+def _parse_cron(time_str: str, tz: str, days: Optional[List[int]] = None):
     h, m = map(int, time_str.split(":"))
+    if days and len(days) < 7:
+        day_str = ",".join(str(d) for d in sorted(days))
+        return CronTrigger(day_of_week=day_str, hour=h, minute=m, timezone=tz)
     return CronTrigger(hour=h, minute=m, timezone=tz)
 
 
@@ -119,18 +141,31 @@ def register_schedule(schedule_id: str):
     if not schedule.enabled:
         return
 
+    days = schedule.days if getattr(schedule, "days", None) and len(schedule.days) > 0 else [0, 1, 2, 3, 4, 5, 6]
+
     scheduler.add_job(
         _run_action,
-        trigger=_parse_cron(schedule.enable_time, schedule.timezone),
+        trigger=_parse_cron(schedule.enable_time, schedule.timezone, days),
         args=[schedule_id, "enable"],
         id=_make_job_id(schedule_id, "enable"),
         replace_existing=True,
         misfire_grace_time=180,
     )
 
+    # If active window spans midnight, disable time executes on next day
+    try:
+        eh, em = map(int, schedule.enable_time.split(":"))
+        dh, dm = map(int, schedule.disable_time.split(":"))
+        if eh * 60 + em > dh * 60 + dm:
+            disable_days = [(d + 1) % 7 for d in days]
+        else:
+            disable_days = days
+    except Exception:
+        disable_days = days
+
     scheduler.add_job(
         _run_action,
-        trigger=_parse_cron(schedule.disable_time, schedule.timezone),
+        trigger=_parse_cron(schedule.disable_time, schedule.timezone, disable_days),
         args=[schedule_id, "disable"],
         id=_make_job_id(schedule_id, "disable"),
         replace_existing=True,
@@ -139,7 +174,7 @@ def register_schedule(schedule_id: str):
 
     logger.info(
         f"Registered schedule {schedule.id}: ON @ {schedule.enable_time}, "
-        f"OFF @ {schedule.disable_time} [{schedule.timezone}]"
+        f"OFF @ {schedule.disable_time} [{schedule.timezone}] (Days: {days})"
     )
 
 

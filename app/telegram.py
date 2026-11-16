@@ -83,3 +83,39 @@ async def test_telegram_alert(bot_token: str, chat_id: str, socks_proxy: str = "
             return {"ok": True, "message": "Test notification delivered to Telegram successfully!"}
     except Exception as e:
         raise ValueError(f"Connection to Telegram failed: {str(e)}")
+
+
+async def send_telegram_backup(filename: str, file_bytes: bytes, caption: str = "") -> bool:
+    """
+    Sends backup JSON file directly to configured Telegram Chat ID.
+    """
+    settings = load_settings()
+    tg = settings.get("telegram", {})
+    if not tg.get("enabled", False):
+        raise ValueError("Telegram Bot notifications are not enabled in settings.")
+
+    bot_token = tg.get("bot_token", "").strip()
+    chat_id = str(tg.get("chat_id", "")).strip()
+    if not bot_token or not chat_id:
+        raise ValueError("Bot Token or Chat ID is missing in settings.")
+
+    api_server = tg.get("api_server", "").strip().rstrip("/") or "https://api.telegram.org"
+    url = f"{api_server}/bot{bot_token}/sendDocument"
+
+    socks_proxy = tg.get("socks_proxy", "").strip()
+    proxy = socks_proxy if socks_proxy else None
+
+    files = {"document": (filename, file_bytes, "application/json")}
+    data = {"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"}
+
+    try:
+        async with httpx.AsyncClient(proxy=proxy, timeout=30.0, verify=False) as client:
+            resp = await client.post(url, data=data, files=files)
+            resp_data = resp.json()
+            if not resp_data.get("ok", False):
+                desc = resp_data.get("description", "Unknown error")
+                raise ValueError(f"Telegram rejection: {desc}")
+            return True
+    except Exception as e:
+        logger.error(f"Failed to send backup to Telegram: {e}")
+        raise ValueError(f"Telegram backup delivery failed: {str(e)}")

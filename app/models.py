@@ -20,6 +20,7 @@ class ScheduleEntry(BaseModel):
     enabled: bool = True
     timezone: str = "Asia/Tehran"
     panel_name: Optional[str] = ""
+    days: List[int] = [0, 1, 2, 3, 4, 5, 6]
 
 
 class PanelConfigCreate(BaseModel):
@@ -37,6 +38,7 @@ class ScheduleEntryCreate(BaseModel):
     disable_time: str
     timezone: str = "Asia/Tehran"
     panel_name: Optional[str] = ""
+    days: Optional[List[int]] = [0, 1, 2, 3, 4, 5, 6]
 
 
 class ScheduleEntryUpdate(BaseModel):
@@ -48,6 +50,7 @@ class ScheduleEntryUpdate(BaseModel):
     timezone: Optional[str] = None
     enabled: Optional[bool] = None
     panel_name: Optional[str] = None
+    days: Optional[List[int]] = None
 
 
 class LoginRequest(BaseModel):

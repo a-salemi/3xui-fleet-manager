@@ -1,9 +1,13 @@
 import uuid
+import time
+import json
 import logging
 import asyncio
+import urllib.parse
+from datetime import datetime
 from contextlib import asynccontextmanager
-from typing import Dict, Any
-from fastapi import FastAPI, Request, HTTPException, Depends, Form
+from typing import Dict, Any, List, Optional
+from fastapi import FastAPI, Request, HTTPException, Depends, Form, Response, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -11,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from app import storage, scheduler as sched, users
 from app.config import load_settings, save_settings
 from app.system import get_system_metrics
-from app.telegram import test_telegram_alert
+from app.telegram import test_telegram_alert, send_telegram_backup
 from app.models import (
     PanelConfigCreate, ScheduleEntryCreate, ScheduleEntryUpdate,
     PanelConfig, ScheduleEntry, GeneralSettingsUpdate,
@@ -22,6 +26,44 @@ from app.xui_client import XUIClient
 # Maps session_token -> user_dict {"id": ..., "username": ..., "role": ...}
 _sessions: Dict[str, Dict[str, Any]] = {}
 logger = logging.getLogger("app")
+
+# ─── Login Rate Limiting & Brute-Force Shield ────────────────────────────────
+_login_failures: Dict[str, List[float]] = {}
+_locked_ips: Dict[str, float] = {}
+
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_SEC = 900  # 15 minutes
+WINDOW_DURATION_SEC = 600   # 10 minutes
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "127.0.0.1"
+
+def _check_ip_locked(ip: str) -> Optional[int]:
+    now = time.time()
+    if ip in _locked_ips:
+        if now < _locked_ips[ip]:
+            return int(_locked_ips[ip] - now)
+        else:
+            del _locked_ips[ip]
+            _login_failures.pop(ip, None)
+    return None
+
+def _record_login_failure(ip: str):
+    now = time.time()
+    attempts = _login_failures.get(ip, [])
+    attempts = [t for t in attempts if now - t < WINDOW_DURATION_SEC]
+    attempts.append(now)
+    _login_failures[ip] = attempts
+    if len(attempts) >= MAX_LOGIN_ATTEMPTS:
+        _locked_ips[ip] = now + LOCKOUT_DURATION_SEC
+        _login_failures.pop(ip, None)
+
+def _record_login_success(ip: str):
+    _login_failures.pop(ip, None)
+    _locked_ips.pop(ip, None)
 
 
 @asynccontextmanager
@@ -76,14 +118,50 @@ async def login_page(request: Request):
 
 @app.post("/login")
 async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
+    ip = _get_client_ip(request)
+    remaining_lock = _check_ip_locked(ip)
+    if remaining_lock:
+        mins = max(1, round(remaining_lock / 60))
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "error": f"Too many failed login attempts! IP locked for {mins} more minute(s) (Brute-Force Shield Active)."
+            },
+            status_code=429
+        )
+
     user = users.authenticate(username, password)
     if user:
+        _record_login_success(ip)
         token = str(uuid.uuid4())
         _sessions[token] = user
         response = RedirectResponse("/dashboard", status_code=302)
         response.set_cookie("session", token, httponly=True, samesite="lax", max_age=86400 * 7)
         return response
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})
+
+    _record_login_failure(ip)
+    remaining_lock = _check_ip_locked(ip)
+    if remaining_lock:
+        mins = round(LOCKOUT_DURATION_SEC / 60)
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "error": f"Exceeded {MAX_LOGIN_ATTEMPTS} failed attempts. Your IP has been temporarily locked for {mins} minutes."
+            },
+            status_code=429
+        )
+
+    attempts_count = len(_login_failures.get(ip, []))
+    remaining_attempts = max(0, MAX_LOGIN_ATTEMPTS - attempts_count)
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "error": f"Invalid username or password. ({remaining_attempts} attempt(s) remaining before IP lockout)"
+        }
+    )
 
 
 @app.get("/logout")
@@ -206,6 +284,19 @@ async def api_get_inbounds(panel_id: str, _=Depends(get_current_user)):
         raise HTTPException(502, detail=str(e))
 
 
+@app.get("/api/panels/{panel_id}/ping")
+async def api_ping_panel(panel_id: str, _=Depends(get_current_user)):
+    panel = storage.get_panel(panel_id)
+    if not panel:
+        raise HTTPException(404, "Panel not found")
+    client = XUIClient(panel.url, panel.token, panel.path_prefix)
+    try:
+        latency = await client.ping()
+        return {"ok": True, "latency_ms": latency}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 # ─── API: Schedules ───────────────────────────────────────────────────────────
 
 @app.get("/api/schedules")
@@ -290,6 +381,76 @@ async def api_run_now(schedule_id: str, action: str, _=Depends(require_operator_
     return {"ok": True}
 
 
+@app.get("/api/schedules/{schedule_id}/stats")
+async def api_schedule_stats(schedule_id: str, _=Depends(get_current_user)):
+    schedule = storage.get_schedule(schedule_id)
+    if not schedule:
+        raise HTTPException(404, "Schedule not found")
+    panel = storage.get_panel(schedule.panel_id)
+    if not panel:
+        raise HTTPException(404, "Target panel not found")
+
+    client = XUIClient(panel.url, panel.token, panel.path_prefix)
+    try:
+        inbound = await client.get_inbound(schedule.inbound_id)
+        up_bytes = inbound.get("up", 0)
+        down_bytes = inbound.get("down", 0)
+        total_limit = inbound.get("total", 0)
+        client_stats = inbound.get("clientStats", [])
+        return {
+            "ok": True,
+            "id": schedule.inbound_id,
+            "remark": inbound.get("remark", schedule.inbound_remark),
+            "port": inbound.get("port"),
+            "protocol": inbound.get("protocol", "unknown"),
+            "enabled": inbound.get("enable", False),
+            "up_bytes": up_bytes,
+            "down_bytes": down_bytes,
+            "total_bytes": up_bytes + down_bytes,
+            "limit_bytes": total_limit,
+            "client_count": len(client_stats) if client_stats else 0
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.post("/api/schedules/{schedule_id}/check-port")
+async def api_check_schedule_port(schedule_id: str, _=Depends(get_current_user)):
+    schedule = storage.get_schedule(schedule_id)
+    if not schedule:
+        raise HTTPException(404, "Schedule not found")
+    panel = storage.get_panel(schedule.panel_id)
+    if not panel:
+        raise HTTPException(404, "Target panel not found")
+
+    client = XUIClient(panel.url, panel.token, panel.path_prefix)
+    try:
+        inbound = await client.get_inbound(schedule.inbound_id)
+        port = inbound.get("port")
+        if not port:
+            return {"open": False, "error": "No port specified in inbound"}
+
+        parsed = urllib.parse.urlparse(panel.url)
+        host = parsed.hostname or "127.0.0.1"
+
+        start_time = time.perf_counter()
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(host, int(port)),
+                timeout=4.0
+            )
+            elapsed_ms = round((time.perf_counter() - start_time) * 1000.0, 1)
+            writer.close()
+            await writer.wait_closed()
+            return {"open": True, "port": port, "host": host, "latency_ms": elapsed_ms}
+        except asyncio.TimeoutError:
+            return {"open": False, "port": port, "host": host, "error": "Connection timed out (Port filtered or blocked)"}
+        except Exception as conn_err:
+            return {"open": False, "port": port, "host": host, "error": str(conn_err)}
+    except Exception as e:
+        return {"open": False, "error": str(e)}
+
+
 # ─── API: Logs ────────────────────────────────────────────────────────────────
 
 @app.get("/api/logs")
@@ -335,6 +496,53 @@ async def api_test_telegram(data: TelegramTestRequest, _=Depends(require_admin))
         return res
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ─── API: Backup & Restore (Admin Only) ───────────────────────────────────────
+
+@app.get("/api/backup")
+async def api_export_backup(_=Depends(require_admin)):
+    data = storage.create_backup_data()
+    content = json.dumps(data, indent=2, ensure_ascii=False)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"3xui_fleet_backup_{timestamp}.json"
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@app.post("/api/backup/telegram")
+async def api_backup_telegram(_=Depends(require_admin)):
+    try:
+        data = storage.create_backup_data()
+        content = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        filename = f"3xui_fleet_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        caption = (
+            f"💾 <b>3X-UI Fleet Automation Backup</b>\n\n"
+            f"📅 <b>Date:</b> <code>{timestamp}</code>\n"
+            f"🖥 <b>Panels:</b> <code>{len(data.get('panels', []))}</code>\n"
+            f"⏰ <b>Schedules:</b> <code>{len(data.get('schedules', []))}</code>\n"
+            f"👥 <b>Users:</b> <code>{len(data.get('users', []))}</code>\n\n"
+            f"<i>Keep this file safe to restore your entire manager configuration anytime.</i>"
+        )
+        await send_telegram_backup(filename, content, caption)
+        return {"ok": True, "message": "Backup document delivered to your Telegram chat successfully!"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/restore")
+async def api_restore_backup(request: Request, _=Depends(require_admin)):
+    try:
+        body = await request.json()
+        storage.restore_backup_data(body)
+        asyncio.create_task(sched.reload_all_schedules_async())
+        return {"ok": True, "message": "Configuration restored successfully! All schedules reloaded."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to restore backup: {str(e)}")
 
 
 @app.get("/health")

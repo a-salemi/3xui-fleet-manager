@@ -27,10 +27,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleUrlRoute(false);
   });
 
-  // Initialize Language
+  // Initialize Language & Theme
   if (typeof setLanguage === 'function') {
     setLanguage(currentLang);
   }
+  initTheme();
 
   // Initial Load from URL
   handleUrlRoute(false);
@@ -56,6 +57,30 @@ function hideAppLoader() {
     loader.classList.add('fade-out');
     setTimeout(() => loader.remove(), 500);
   }
+}
+
+// ─── Theme Management ────────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('xui_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('xui_theme', next);
+  updateThemeIcon(next);
+  toast(next === 'dark' ? 'Switched to Obsidian Dark 🌙' : 'Switched to Apple Light Glass ☀️', 'info');
+}
+
+function updateThemeIcon(theme) {
+  const icon = theme === 'dark' ? '🌙' : '☀️';
+  const tBtnDesk = document.getElementById('desktopThemeToggleBtn');
+  const tBtnMob = document.getElementById('mobileThemeToggleBtn');
+  if (tBtnDesk) tBtnDesk.textContent = icon;
+  if (tBtnMob) tBtnMob.textContent = icon;
 }
 
 function updateLiveClock() {
@@ -390,7 +415,10 @@ function renderPanels() {
           <div class="panel-title-text">${esc(p.name)}</div>
           <div class="panel-url-sub">${esc(p.url)}</div>
         </div>
-        <span class="panel-status-tag">Connected</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="panel-ping-badge" id="pingBadge_${p.id}" onclick="pingPanel('${p.id}')" title="Click to Ping">⚡ Ping</span>
+          <span class="panel-status-tag">Connected</span>
+        </div>
       </div>
       <div class="panel-footer-actions">
         <button class="btn btn-ghost btn-sm" onclick="testPanel('${p.id}')">🔌 ${t('btn_test') || 'Test'}</button>
@@ -398,6 +426,43 @@ function renderPanels() {
       </div>
     </div>
   `).join('');
+
+  // Background latency heartbeat
+  panels.forEach(p => pingPanel(p.id, false));
+}
+
+async function pingPanel(id, notify = true) {
+  const badge = document.getElementById(`pingBadge_${id}`);
+  if (badge) {
+    badge.className = 'panel-ping-badge';
+    badge.innerHTML = `<span class="spinner" style="width:10px;height:10px;border-width:1.5px;"></span>`;
+  }
+  try {
+    const res = await api('GET', `/api/panels/${id}/ping`);
+    if (res.ok) {
+      const ms = res.latency_ms;
+      if (badge) {
+        let cls = 'online';
+        if (ms > 350) cls = 'offline';
+        else if (ms > 150) cls = 'degraded';
+        badge.className = `panel-ping-badge ${cls}`;
+        badge.innerHTML = `⚡ ${ms}ms`;
+      }
+      if (notify) toast(`Ping to panel: ${ms}ms`, 'ok');
+    } else {
+      if (badge) {
+        badge.className = 'panel-ping-badge offline';
+        badge.textContent = 'Offline';
+      }
+      if (notify) toast(`Ping failed: ${res.error}`, 'err');
+    }
+  } catch (e) {
+    if (badge) {
+      badge.className = 'panel-ping-badge offline';
+      badge.textContent = 'Err';
+    }
+    if (notify) toast(`Ping error: ${e.message}`, 'err');
+  }
 }
 
 function showAddPanel() {
@@ -497,17 +562,47 @@ function isScheduleActiveNow(s) {
     const disMins = dh * 60 + dm;
 
     const now = new Date();
+    // JS getDay(): 0=Sun, 1=Mon ... 6=Sat -> Python weekday: 0=Mon ... 6=Sun
+    const todayWeekday = (now.getDay() + 6) % 7;
+    const days = (s.days && s.days.length) ? s.days : [0, 1, 2, 3, 4, 5, 6];
+
     const curMins = now.getHours() * 60 + now.getMinutes();
 
     if (enMins < disMins) {
+      if (days.length < 7 && !days.includes(todayWeekday)) return false;
       return curMins >= enMins && curMins < disMins;
     } else if (enMins > disMins) {
-      return curMins >= enMins || curMins < disMins;
+      if (curMins >= enMins) {
+        if (days.length < 7 && !days.includes(todayWeekday)) return false;
+        return true;
+      } else if (curMins < disMins) {
+        const yesterdayWeekday = (todayWeekday + 6) % 7;
+        if (days.length < 7 && !days.includes(yesterdayWeekday)) return false;
+        return true;
+      }
     }
     return false;
   } catch {
     return false;
   }
+}
+
+function formatScheduleDays(days) {
+  if (!days || days.length === 0 || days.length === 7) {
+    return t('days_all');
+  }
+  const isWeekendIR = days.length === 2 && days.includes(3) && days.includes(4);
+  if (isWeekendIR) return t('days_weekend_ir');
+
+  const isWeekendIntl = days.length === 2 && days.includes(5) && days.includes(6);
+  if (isWeekendIntl) return t('days_weekend_intl');
+
+  const isWorkdays = days.length === 5 && [0,1,2,3,4].every(d => days.includes(d));
+  if (isWorkdays) return t('days_workdays');
+
+  const order = currentLang === 'fa' ? [5, 6, 0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6];
+  const sorted = [...days].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  return sorted.map(d => t('day_' + d)).join(', ');
 }
 
 function renderSchedules() {
@@ -546,6 +641,8 @@ function renderSchedules() {
             <div class="inbound-title">
               <span class="inbound-name">${esc(s.inbound_remark)}</span>
               <span class="inbound-id-tag">#${s.inbound_id}</span>
+              <button class="btn-micro" onclick="showInboundStats('${s.id}')" title="${t('btn_traffic_stats')}">📊</button>
+              <button class="btn-micro" onclick="checkSchedulePort('${s.id}')" title="${t('btn_port_check')}">🔍 Port</button>
             </div>
             <div class="mobile-status-slot">${statusBadge}</div>
           </div>
@@ -556,10 +653,15 @@ function renderSchedules() {
         </td>
         <td class="col-window">
           <span class="cell-label">${t('th_window')}:</span>
-          <div class="window-badge">
-            <span>${s.enable_time}</span>
-            <span class="window-arrow">→</span>
-            <span>${s.disable_time}</span>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div class="window-badge">
+              <span>${s.enable_time}</span>
+              <span class="window-arrow">→</span>
+              <span>${s.disable_time}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+              <span>📅</span> <span>${formatScheduleDays(s.days)}</span>
+            </div>
           </div>
         </td>
         <td class="col-tz">
@@ -593,6 +695,59 @@ function filterSchedules() {
     const text = r.textContent.toLowerCase();
     r.style.display = text.includes(q) ? '' : 'none';
   });
+}
+
+// ─── Day-of-Week Chips Selector ──────────────────────────────────────────────
+function renderDayChipsHTML(containerId, selectedDays = [0, 1, 2, 3, 4, 5, 6]) {
+  const isFa = currentLang === 'fa';
+  // Display order: Persian starts from Sat (5) ... Fri (4); International Mon (0) ... Sun (6)
+  const daysList = isFa ? [5, 6, 0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6];
+
+  const chips = daysList.map(d => {
+    const active = selectedDays.includes(d) ? 'active' : '';
+    return `<span class="day-chip ${active}" data-day="${d}" onclick="toggleDayChip(this)">${t('day_' + d)}</span>`;
+  }).join('');
+
+  return `
+    <div class="form-field" style="margin-top:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <label>${t('th_days')}</label>
+        <div style="display:flex;gap:4px;">
+          <button type="button" class="day-preset-btn" onclick="applyDayPreset('${containerId}', [0,1,2,3,4,5,6])">${t('days_all')}</button>
+          <button type="button" class="day-preset-btn" onclick="applyDayPreset('${containerId}', ${isFa ? '[3,4]' : '[5,6]'})">${isFa ? 'آخر هفته' : 'Weekend'}</button>
+          <button type="button" class="day-preset-btn" onclick="applyDayPreset('${containerId}', [0,1,2,3,4])">${isFa ? 'روزهای کاری' : 'Workdays'}</button>
+        </div>
+      </div>
+      <div class="day-chips-grid" id="${containerId}">
+        ${chips}
+      </div>
+    </div>
+  `;
+}
+
+function toggleDayChip(el) {
+  el.classList.toggle('active');
+}
+
+function applyDayPreset(containerId, daysArray) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.day-chip').forEach(chip => {
+    const d = parseInt(chip.getAttribute('data-day'));
+    if (daysArray.includes(d)) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+}
+
+function getSelectedDaysFromContainer(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return [0, 1, 2, 3, 4, 5, 6];
+  const activeChips = container.querySelectorAll('.day-chip.active');
+  const days = Array.from(activeChips).map(c => parseInt(c.getAttribute('data-day')));
+  return days.length > 0 ? days : [0, 1, 2, 3, 4, 5, 6];
 }
 
 function showAddSchedule() {
@@ -631,6 +786,8 @@ function showAddSchedule() {
       <span class="preset-chip" onclick="applyPreset('01','00','06','00')">01:00 - 06:00</span>
       <span class="preset-chip" onclick="applyPreset('08','00','18','00')">☀️ Daytime (08:00 - 18:00)</span>
     </div>
+
+    ${renderDayChipsHTML('newScheduleDays', [0, 1, 2, 3, 4, 5, 6])}
 
     <div class="form-field" style="margin-top:16px;">
       <label>Timezone</label>
@@ -692,7 +849,8 @@ async function saveNewSchedule() {
     inbound_remark: opt.dataset.remark || opt.textContent,
     enable_time: getTimePickerValue('sEn'),
     disable_time: getTimePickerValue('sDis'),
-    timezone: document.getElementById('sTz').value
+    timezone: document.getElementById('sTz').value,
+    days: getSelectedDaysFromContainer('newScheduleDays')
   };
 
   setBtnLoading(btn, true, 'Creating & Syncing...');
@@ -747,6 +905,8 @@ function showEditSchedule(scheduleId) {
       <span class="preset-chip" onclick="applyPreset('08','00','18','00')">☀️ Daytime (08:00 - 18:00)</span>
     </div>
 
+    ${renderDayChipsHTML('editScheduleDays', s.days || [0, 1, 2, 3, 4, 5, 6])}
+
     <div class="form-field" style="margin-top:16px;">
       <label>Timezone</label>
       <select class="form-input" id="sTz">
@@ -780,7 +940,8 @@ async function updateSchedule(scheduleId) {
     inbound_remark: opt ? (opt.dataset.remark || opt.textContent) : undefined,
     enable_time: getTimePickerValue('sEn'),
     disable_time: getTimePickerValue('sDis'),
-    timezone: document.getElementById('sTz').value
+    timezone: document.getElementById('sTz').value,
+    days: getSelectedDaysFromContainer('editScheduleDays')
   };
 
   setBtnLoading(btn, true, 'Updating & Syncing...');
@@ -1154,6 +1315,140 @@ function updateMetrics() {
   const activeCount = schedules.filter(s => s.enabled).length;
   document.getElementById('statActiveSchedules').textContent = activeCount;
   document.getElementById('statTotalPanels').textContent = panels.length;
+}
+
+// ─── 7. INBOUND TELEMETRY & PORT CHECK ───────────────────────────────────────
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function showInboundStats(scheduleId) {
+  openModal(t('btn_traffic_stats'), 'LIVE TELEMETRY', `
+    <div style="text-align:center;padding:24px;">
+      <span class="spinner"></span>
+      <p style="margin-top:10px;color:var(--text-muted);">Fetching inbound telemetry from 3X-UI...</p>
+    </div>
+  `);
+
+  try {
+    const stats = await api('GET', `/api/schedules/${scheduleId}/stats`);
+    if (!stats.ok) throw new Error(stats.error || 'Failed to fetch inbound telemetry');
+
+    const limitStr = stats.limit_bytes > 0 ? formatBytes(stats.limit_bytes) : 'Unlimited (نامحدود)';
+
+    openModal(`${stats.remark} (#${stats.id})`, stats.protocol.toUpperCase(), `
+      <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0;">
+        <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;">
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:12px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);">${t('stat_download')} (Down)</div>
+            <div style="font-size:18px;font-weight:800;color:var(--accent-cyan);margin-top:4px;">⬇️ ${formatBytes(stats.down_bytes)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:12px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);">${t('stat_upload')} (Up)</div>
+            <div style="font-size:18px;font-weight:800;color:var(--accent-purple);margin-top:4px;">⬆️ ${formatBytes(stats.up_bytes)}</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:12px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:12px;color:var(--text-muted);">${t('stat_total_transferred')}:</span>
+            <span style="font-weight:700;color:var(--text-primary);">${formatBytes(stats.total_bytes)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:12px;color:var(--text-muted);">Traffic Cap (سقف ترافیک):</span>
+            <span style="font-weight:700;color:var(--text-primary);">${limitStr}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:12px;color:var(--text-muted);">${t('stat_clients')}:</span>
+            <span style="font-weight:700;color:var(--text-primary);">👥 ${stats.client_count} client(s)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">Port & Protocol:</span>
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-cyan);">:${stats.port} (${stats.protocol})</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button class="btn btn-ghost" style="flex:1;" onclick="checkSchedulePort('${scheduleId}')">🔍 Test Port :${stats.port}</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="closeModal()">Close</button>
+        </div>
+      </div>
+    `);
+  } catch (e) {
+    openModal('Telemetry Error', 'ERROR', `
+      <div style="text-align:center;padding:20px;color:var(--danger);">
+        ⚠️ Failed to load stats: ${esc(e.message)}
+      </div>
+    `);
+  }
+}
+
+async function checkSchedulePort(scheduleId) {
+  try {
+    toast(`Testing TCP port reachability...`, 'info');
+    const res = await api('POST', `/api/schedules/${scheduleId}/check-port`);
+    if (res.open) {
+      toast(`Port :${res.port} on ${res.host} is OPEN & Reachable! (${res.latency_ms}ms)`, 'ok');
+    } else {
+      toast(`Port :${res.port} is UNREACHABLE or Filtered: ${res.error || 'Blocked'}`, 'err');
+    }
+  } catch (e) {
+    toast(`Port check failed: ${e.message}`, 'err');
+  }
+}
+
+// ─── 8. BACKUP & RESTORE ─────────────────────────────────────────────────────
+function downloadBackup() {
+  toast('Generating fleet backup file...', 'info');
+  window.location.href = '/api/backup';
+  setTimeout(() => {
+    toast('Backup download initiated!', 'ok');
+  }, 800);
+}
+
+async function sendBackupToTelegram() {
+  try {
+    toast('Packaging and sending backup to Telegram...', 'info');
+    const res = await api('POST', '/api/backup/telegram');
+    toast(res.message || 'Backup document sent to Telegram!', 'ok');
+  } catch (e) {
+    toast('Failed to send backup: ' + e.message, 'err');
+  }
+}
+
+function triggerRestoreFileDialog() {
+  const fi = document.getElementById('backupFileInput');
+  if (fi) fi.click();
+}
+
+async function handleRestoreFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (!confirm('Are you sure you want to restore from this backup file? Existing configuration will be updated.')) {
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      toast('Restoring fleet configuration...', 'info');
+      const res = await api('POST', '/api/restore', data);
+      toast(res.message || 'Backup restored successfully!', 'ok');
+      await loadAllData();
+    } catch (err) {
+      toast('Restore failed: ' + err.message, 'err');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ─── UTIL ────────────────────────────────────────────────────────────────────

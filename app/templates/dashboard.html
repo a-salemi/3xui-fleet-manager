@@ -9,7 +9,13 @@
 <!-- Vazirmatn Font for Persian (jsDelivr CDN + Google Fonts) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Vazirmatn:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css?v=7.0"/>
+<link rel="stylesheet" href="/static/css/style.css?v=8.0"/>
+<script>
+  (function(){
+    const t = localStorage.getItem('xui_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 </head>
 <body>
 
@@ -32,6 +38,8 @@
     <span class="brand-title">3X-UI Manager</span>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
+    <!-- Theme Toggle (Mobile) -->
+    <button class="theme-toggle-btn" id="mobileThemeToggleBtn" onclick="toggleTheme()" aria-label="Toggle Theme" title="Toggle Theme">🌙</button>
     <!-- Mobile Custom Language Dropdown -->
     <div class="custom-dropdown mobile-dropdown" id="mobileLangDropdown">
       <button class="custom-dropdown-btn compact" type="button" onclick="toggleLangDropdown(event, 'mobile')" id="mobileLangDropdownBtn" aria-label="Select Language">
@@ -151,6 +159,9 @@
       </div>
 
       <div class="topbar-controls">
+        <!-- Theme Toggle (Desktop) -->
+        <button class="theme-toggle-btn" id="desktopThemeToggleBtn" onclick="toggleTheme()" aria-label="Toggle Theme" title="Toggle Theme">🌙</button>
+
         <div class="system-clock-badge">
           <span class="clock-icon">🕒</span>
           <span id="liveClockDisplay">--:--:--</span>
@@ -539,6 +550,36 @@
         </div>
       </div>
 
+      <!-- Card D: Fleet Backup & Restore (Admin Only) -->
+      <div class="content-card" id="adminBackupSection">
+        <div class="card-toolbar">
+          <div class="toolbar-info">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">💾</span>
+              <h3 data-i18n="backup_title">Fleet Backup & Restore</h3>
+            </div>
+            <p data-i18n="backup_sub">Create a full backup of all panels, schedules, and accounts, or restore from a JSON file.</p>
+          </div>
+        </div>
+        <div style="padding:24px;">
+          <input type="file" id="backupFileInput" style="display:none;" onchange="handleRestoreFile(event)" accept=".json" />
+          <div class="backup-actions-grid">
+            <div class="backup-btn-card" onclick="downloadBackup()">
+              <div class="btn-title"><span>📥</span> <span data-i18n="btn_backup_download">Download Backup (.json)</span></div>
+              <div class="btn-desc">Export panels, schedules, users & settings to a downloadable JSON file.</div>
+            </div>
+            <div class="backup-btn-card" onclick="triggerRestoreFileDialog()">
+              <div class="btn-title"><span>📤</span> <span data-i18n="btn_backup_restore">Restore from File</span></div>
+              <div class="btn-desc">Upload a previously saved JSON backup to restore entire fleet state.</div>
+            </div>
+            <div class="backup-btn-card" onclick="sendBackupToTelegram()">
+              <div class="btn-title"><span>✈️</span> <span data-i18n="btn_backup_tg">Send Backup to Telegram</span></div>
+              <div class="btn-desc">Deliver an instant backup file directly to your configured Telegram bot.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
   </main>
@@ -561,7 +602,7 @@
 <!-- Notification Toast Container -->
 <div class="toast-stack" id="toastStack"></div>
 
-<script src="/static/js/i18n.js?v=7.0"></script>
-<script src="/static/js/app.js?v=7.0"></script>
+<script src="/static/js/i18n.js?v=8.0"></script>
+<script src="/static/js/app.js?v=8.0"></script>
 </body>
 </html>

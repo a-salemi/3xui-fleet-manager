@@ -153,3 +153,40 @@ def get_logs() -> List[Dict[str, Any]]:
 
 def clear_logs():
     _save_json(LOGS_FILE, [])
+
+
+# ─── Backup & Restore ─────────────────────────────────────────────────────────
+
+def create_backup_data() -> Dict[str, Any]:
+    from app.config import load_settings
+    from app.users import _load_users_raw
+    return {
+        "version": "8.0",
+        "exported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "panels": _load_json(PANELS_FILE),
+        "schedules": _load_json(SCHEDULES_FILE),
+        "settings": load_settings(),
+        "users": _load_users_raw()
+    }
+
+
+def restore_backup_data(data: Dict[str, Any]) -> bool:
+    from app.config import save_settings
+    from app.users import _save_users_raw
+
+    if not isinstance(data, dict):
+        raise ValueError("Invalid backup format: root must be a JSON object")
+
+    if "panels" in data and isinstance(data["panels"], list):
+        _save_json(PANELS_FILE, data["panels"])
+
+    if "schedules" in data and isinstance(data["schedules"], list):
+        _save_json(SCHEDULES_FILE, data["schedules"])
+
+    if "settings" in data and isinstance(data["settings"], dict):
+        save_settings(data["settings"])
+
+    if "users" in data and isinstance(data["users"], list):
+        _save_users_raw(data["users"])
+
+    return True
