@@ -125,23 +125,148 @@ html[data-theme="light"] .modal-dialog {
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
 }
 
+/* Light Theme: Custom Language Dropdown */
+html[data-theme="light"] .custom-dropdown-btn {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-theme="light"] .custom-dropdown-btn:hover {
+  background: #ffffff !important;
+  border-color: rgba(124, 58, 237, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.14) !important;
+}
+
+html[data-theme="light"] .custom-dropdown.open .custom-dropdown-btn {
+  background: #ffffff !important;
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="light"] .custom-dropdown-btn .lang-btn-text {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .custom-dropdown-btn .dropdown-chevron {
+  stroke: #64748b !important;
+}
+
+html[data-theme="light"] .custom-dropdown.open .dropdown-chevron {
+  stroke: #7c3aed !important;
+}
+
+html[data-theme="light"] .custom-dropdown-menu {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 18px 45px -4px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04), 0 6px 16px -2px rgba(124, 58, 237, 0.1) !important;
+}
+
+html[data-theme="light"] .dropdown-menu-header {
+  color: #64748b !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07) !important;
+}
+
+html[data-theme="light"] .dropdown-item {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .dropdown-item:hover {
+  background: rgba(124, 58, 237, 0.08) !important;
+  border-color: rgba(124, 58, 237, 0.22) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .dropdown-item .item-title {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .dropdown-item .item-sub {
+  color: #64748b !important;
+}
+
+html[data-theme="light"] .dropdown-item.active {
+  background: rgba(124, 58, 237, 0.12) !important;
+  border-color: rgba(124, 58, 237, 0.35) !important;
+  color: #7c3aed !important;
+}
+
+html[data-theme="light"] .dropdown-item.active .item-title {
+  color: #7c3aed !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme="light"] .dropdown-item.active .item-sub {
+  color: #8b5cf6 !important;
+}
+
+html[data-theme="light"] .dropdown-item .item-check {
+  color: #7c3aed !important;
+}
+
+/* Light Theme: Topbar Controls */
+html[data-theme="light"] .system-clock-badge {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .theme-toggle-btn {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .theme-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 0 14px rgba(124, 58, 237, 0.15) !important;
+}
+
+/* Light Theme: Toast Apple / Dynamic Island */
 html[data-theme="light"] .toast-apple {
-  background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.15), 0 0 20px -2px rgba(139, 92, 246, 0.15);
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(32px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.09) !important;
+  box-shadow: 
+    0 20px 48px -10px rgba(0, 0, 0, 0.15), 
+    0 0 0 1px rgba(0, 0, 0, 0.04), 
+    0 6px 20px -2px rgba(124, 58, 237, 0.12) !important;
 }
 
 html[data-theme="light"] .toast-island-text {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
 html[data-theme="light"] .toast-island-close {
-  color: rgba(0, 0, 0, 0.4);
+  color: rgba(0, 0, 0, 0.45) !important;
 }
 
 html[data-theme="light"] .toast-island-close:hover {
-  color: #000;
-  background: rgba(0, 0, 0, 0.06);
+  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="light"] .toast-apple.ok .toast-island-icon {
+  background: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #059669 !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.22) !important;
+}
+
+html[data-theme="light"] .toast-apple.err .toast-island-icon {
+  background: rgba(244, 63, 94, 0.14) !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+  color: #e11d48 !important;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.22) !important;
+}
+
+html[data-theme="light"] .toast-apple.info .toast-island-icon {
+  background: rgba(14, 165, 233, 0.14) !important;
+  border-color: rgba(14, 165, 233, 0.4) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.22) !important;
 }
 
 body {
@@ -1553,72 +1678,70 @@ html[data-theme="light"] .btn-xray-restart {
 /* ─── Apple / iOS Dynamic Island Glass Notifications ───────────────────────── */
 .toast-stack {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: 18px;
+  left: 50%;
+  right: auto;
   bottom: auto;
-  left: auto;
+  transform: translateX(-50%);
   z-index: 999999;
   display: flex;
   flex-direction: column;
   gap: 10px;
   pointer-events: none;
-  max-width: 440px;
-  align-items: flex-end;
+  width: max-content;
+  max-width: min(92vw, 480px);
+  align-items: center;
 }
 
-/* RTL positioning on Desktop (top-left for Persian) */
-html[dir="rtl"] .toast-stack,
-body.rtl .toast-stack {
-  right: auto;
-  left: 24px;
-  align-items: flex-start;
-}
-
-/* Base Toast Apple Capsule */
+/* Base Toast Apple Dynamic Island Capsule */
 .toast-apple {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 11px;
-  padding: 8px 14px 8px 10px;
+  gap: 12px;
+  padding: 10px 18px 10px 12px;
   border-radius: 9999px;
-  background: rgba(13, 16, 26, 0.88);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 18, 28, 0.86);
+  -webkit-backdrop-filter: blur(32px) saturate(220%);
+  backdrop-filter: blur(32px) saturate(220%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 
-    0 16px 36px -6px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 24px -2px rgba(139, 92, 246, 0.18);
+    0 22px 50px -10px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 32px -4px rgba(139, 92, 246, 0.22);
   pointer-events: auto;
   overflow: hidden;
   max-width: 100%;
-  animation: toastDropDesktop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
+  animation: iosDynamicIslandDrop 0.44s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards;
+  will-change: transform, opacity, filter;
   direction: inherit;
 }
 
 /* RTL adjustment for inner padding */
 html[dir="rtl"] .toast-apple,
 body.rtl .toast-apple {
-  padding: 8px 10px 8px 14px;
+  padding: 10px 12px 10px 18px;
 }
 
 /* Island Icon Aura */
 .toast-island-icon {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .toast-island-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
+}
+
+.toast-apple:hover .toast-island-icon {
+  transform: scale(1.08);
 }
 
 /* Success Island */
@@ -1626,11 +1749,11 @@ body.rtl .toast-apple {
   background: rgba(16, 185, 129, 0.2);
   border: 1px solid rgba(52, 211, 153, 0.5);
   color: #34d399;
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.45);
 }
 
 .toast-apple.ok {
-  border-color: rgba(52, 211, 153, 0.25);
+  border-color: rgba(52, 211, 153, 0.28);
 }
 
 /* Error Island */
@@ -1638,11 +1761,11 @@ body.rtl .toast-apple {
   background: rgba(244, 63, 94, 0.2);
   border: 1px solid rgba(251, 113, 133, 0.5);
   color: #fb7185;
-  box-shadow: 0 0 14px rgba(244, 63, 94, 0.45);
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.45);
 }
 
 .toast-apple.err {
-  border-color: rgba(244, 63, 94, 0.25);
+  border-color: rgba(244, 63, 94, 0.28);
 }
 
 /* Info Island */
@@ -1650,11 +1773,11 @@ body.rtl .toast-apple {
   background: rgba(56, 189, 248, 0.2);
   border: 1px solid rgba(56, 189, 248, 0.5);
   color: #38bdf8;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
 }
 
 .toast-apple.info {
-  border-color: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.28);
 }
 
 .toast-spin {
@@ -1668,34 +1791,37 @@ body.rtl .toast-apple {
 
 /* Toast Text */
 .toast-island-text {
-  font-size: 13px;
-  font-weight: 550;
+  font-size: 13.5px;
+  font-weight: 600;
   color: #f8fafc;
   line-height: 1.45;
   letter-spacing: -0.2px;
   word-break: break-word;
-  padding: 1px 2px;
+  padding: 1px 4px;
 }
 
 /* Close button */
 .toast-island-close {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 17px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 16px;
   line-height: 1;
-  padding: 2px 6px;
-  cursor: pointer;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  transition: all 0.15s ease;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .toast-island-close:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.1);
 }
 
 /* Bottom Progress hairline */
@@ -1732,12 +1858,20 @@ body.rtl .toast-progress-bar {
   to { transform: scaleX(0); }
 }
 
-/* Desktop Drop Animation */
-@keyframes toastDropDesktop {
+/* iOS Dynamic Island Drop Animation */
+@keyframes iosDynamicIslandDrop {
   0% {
     opacity: 0;
-    transform: translateY(-20px) scale(0.92);
-    filter: blur(4px);
+    transform: translateY(-42px) scale(0.72);
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(5px) scale(1.025);
+    filter: blur(0);
+  }
+  82% {
+    transform: translateY(-2px) scale(0.99);
   }
   100% {
     opacity: 1;
@@ -1749,13 +1883,13 @@ body.rtl .toast-progress-bar {
 /* Smooth Dismissal Animation */
 .toast-apple.dismissing {
   opacity: 0 !important;
-  transform: translateY(-16px) scale(0.92) !important;
-  filter: blur(5px) !important;
+  transform: translateY(-26px) scale(0.8) !important;
+  filter: blur(8px) !important;
   max-height: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  margin-top: -10px !important;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  margin-top: -12px !important;
+  transition: all 0.34s cubic-bezier(0.32, 1, 0.23, 1) !important;
 }
 
 /* ─── Spinner & Empty States ────────────────────────────────────────────────── */
@@ -2491,38 +2625,21 @@ body.rtl .backup-btn-card {
   }
 
   .toast-apple {
-    animation: dynamicIslandDrop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards !important;
+    animation: iosDynamicIslandDrop 0.44s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards !important;
     box-shadow: 
       0 18px 45px -8px rgba(0, 0, 0, 0.88),
       0 0 0 1px rgba(255, 255, 255, 0.08),
       0 0 28px -2px rgba(139, 92, 246, 0.28) !important;
-    padding: 8px 12px 8px 8px !important;
+    padding: 8px 14px 8px 10px !important;
   }
 
   html[dir="rtl"] .toast-apple,
   body.rtl .toast-apple {
-    padding: 8px 8px 8px 12px !important;
+    padding: 8px 10px 8px 14px !important;
   }
 
   .toast-island-text {
     font-size: 12.5px !important;
     max-width: 72vw !important;
-  }
-
-  @keyframes dynamicIslandDrop {
-    0% {
-      opacity: 0;
-      transform: translateY(-28px) scale(0.85);
-      filter: blur(6px);
-    }
-    65% {
-      transform: translateY(3px) scale(1.02);
-      filter: blur(0);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      filter: blur(0);
-    }
   }
 }

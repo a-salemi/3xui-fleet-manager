@@ -60,10 +60,31 @@ function hideAppLoader() {
 }
 
 // ─── Theme Management ────────────────────────────────────────────────────────
+function getInitialTheme() {
+  const saved = localStorage.getItem('xui_theme');
+  if (saved === 'dark' || saved === 'light') {
+    return saved;
+  }
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    return 'light';
+  }
+  return 'dark';
+}
+
 function initTheme() {
-  const saved = localStorage.getItem('xui_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  updateThemeIcon(saved);
+  const theme = getInitialTheme();
+  document.documentElement.setAttribute('data-theme', theme);
+  updateThemeIcon(theme);
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+      if (!localStorage.getItem('xui_theme')) {
+        const autoTheme = e.matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', autoTheme);
+        updateThemeIcon(autoTheme);
+      }
+    });
+  }
 }
 
 function toggleTheme() {
