@@ -1,6 +1,6 @@
 #!/bin/bash
 # ───────────────────────────────────────────────────────────
-#  3X-UI Inbound Manager — Interactive Installer (Ubuntu 22+)
+#  3X-UI Fleet Manager — Interactive Installer (Ubuntu 22+)
 # ───────────────────────────────────────────────────────────
 set -e
 
@@ -11,11 +11,11 @@ fi
 
 APP_DIR="/opt/xui-manager"
 SERVICE_NAME="xui-manager"
-REPO_URL="https://github.com/a-salemi/3xui-inbound-manager.git"
+REPO_URL="https://github.com/a-salemi/3xui-fleet-manager.git"
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║      ⚡ 3X-UI Inbound Manager — Installation Setup     ║"
+echo "║       ⚡ 3X-UI Fleet Manager — Installation Setup      ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -117,6 +117,10 @@ settings = {
         "chat_id": "",
         "socks_proxy": "",
         "api_server": ""
+    },
+    "two_factor": {
+        "enabled": False,
+        "secret": ""
     }
 }
 with open("${APP_DIR}/app/data/settings.json", "w", encoding="utf-8") as f:
@@ -159,7 +163,7 @@ echo "  ✓ Python dependencies installed successfully"
 echo "[4/5] Configuring systemd service..."
 cat > /etc/systemd/system/${SERVICE_NAME}.service <<EOF
 [Unit]
-Description=3X-UI Inbound Manager
+Description=3X-UI Fleet Manager
 After=network.target
 
 [Service]
