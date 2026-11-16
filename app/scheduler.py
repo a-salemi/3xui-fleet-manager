@@ -71,18 +71,49 @@ async def _run_action(schedule_id: str, action: str, is_sync: bool = False):
 
     # ─── 1. Custom Shell / Bash Command ──────────────────────────────────────────
     if action_type == "custom_command":
+        if os.getenv("ENABLE_SHELL_COMMANDS", "true").lower() in ("false", "0", "no"):
+            storage.add_log("Host Server", schedule.task_name or "Shell", "SECURITY", "BLOCKED", "Shell commands globally disabled via ENABLE_SHELL_COMMANDS=false")
+            return
+
         cmd = (schedule.command or "").strip()
         task_label = schedule.task_name or f"Shell: {cmd[:30]}"
         if not cmd:
             storage.add_log("Host Server", task_label, "COMMAND", "FAILED", "Empty command specified")
             return
+
+        # 🛡️ DESTRUCTIVE COMMAND DEFENSE SHIELD (Wipe / Fork-bomb / Host Destroyer Protection)
+        import re
+        BLOCKED_PATTERNS = [
+            r"\brm\s+-[rfRF]{1,4}\s+/\b",
+            r"\brm\s+-[rfRF]{1,4}\s+/\*",
+            r"\bmkfs\b",
+            r"\bdd\s+if=",
+            r":\(\)\s*\{\s*:\|:&\s*\};:",  # fork bomb
+            r"\bchmod\s+-[rR]{1,2}\s+[07]{3,4}\s+/\b",
+            r">+\s*/etc/(passwd|shadow|fstab)",
+            r">+\s*/dev/(sd|nvme|vd)",
+        ]
+        for pattern in BLOCKED_PATTERNS:
+            if re.search(pattern, cmd):
+                sec_msg = f"SECURITY SHIELD: Destructive command signature blocked: {cmd}"
+                logger.error(sec_msg)
+                storage.add_log("Host Server", task_label, "SECURITY", "BLOCKED", sec_msg)
+                tg_alert = (
+                    f"🚨 <b>CRITICAL SECURITY SHIELD TRIGGERED</b>\n\n"
+                    f"⚠️ <b>Blocked Command:</b> <code>{cmd}</code>\n"
+                    f"🛑 <b>Reason:</b> Matches destructive system wipe signature.\n"
+                    f"🛡️ Action was aborted immediately."
+                )
+                asyncio.create_task(send_telegram_alert(tg_alert))
+                return
+
         try:
             proc = await asyncio.create_subprocess_shell(
                 cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
-            stdout, stderr = await proc.communicate()
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30.0)
             out_str = (stdout.decode("utf-8", errors="replace") + "\n" + stderr.decode("utf-8", errors="replace")).strip()
             status = "SUCCESS" if proc.returncode == 0 else "WARNING"
             detail = f"Exit code {proc.returncode}. Output:\n{out_str[:350]}"
@@ -96,6 +127,9 @@ async def _run_action(schedule_id: str, action: str, is_sync: bool = False):
                 f"📝 <b>Output:</b> <pre>{out_str[:350] or 'No output'}</pre>"
             )
             asyncio.create_task(send_telegram_alert(tg_msg))
+        except asyncio.TimeoutError:
+            storage.add_log("Host Server", task_label, "COMMAND", "TIMEOUT", "Execution timed out after 30 seconds")
+            asyncio.create_task(send_telegram_alert(f"⏱ <b>Shell Execution Timeout:</b> Task <code>{task_label}</code> exceeded 30s limit and was terminated."))
         except Exception as e:
             storage.add_log("Host Server", task_label, "COMMAND", "FAILED", str(e))
             asyncio.create_task(send_telegram_alert(f"❌ <b>Command Execution Failed:</b> <code>{str(e)}</code>"))

@@ -345,7 +345,13 @@ async def api_list_schedules(_=Depends(get_current_user)):
 
 
 @app.post("/api/schedules")
-async def api_add_schedule(data: ScheduleEntryCreate, _=Depends(require_operator_or_admin)):
+async def api_add_schedule(data: ScheduleEntryCreate, user: Dict[str, Any] = Depends(require_operator_or_admin)):
+    if data.action_type == "custom_command":
+        if user.get("role") != "admin":
+            raise HTTPException(403, "Linux shell commands can only be scheduled by Full Administrators.")
+        if os.getenv("ENABLE_SHELL_COMMANDS", "true").lower() in ("false", "0", "no"):
+            raise HTTPException(403, "Linux shell execution is disabled via ENABLE_SHELL_COMMANDS=false.")
+
     data_dict = data.model_dump()
     if not data_dict.get("panel_name"):
         if data.panel_id == "all":
@@ -374,10 +380,14 @@ async def api_add_schedule(data: ScheduleEntryCreate, _=Depends(require_operator
 
 
 @app.put("/api/schedules/{schedule_id}")
-async def api_update_schedule(schedule_id: str, data: ScheduleEntryUpdate, _=Depends(require_operator_or_admin)):
+async def api_update_schedule(schedule_id: str, data: ScheduleEntryUpdate, user: Dict[str, Any] = Depends(require_operator_or_admin)):
     schedule = storage.get_schedule(schedule_id)
     if not schedule:
         raise HTTPException(404, "Schedule not found")
+
+    if data.action_type == "custom_command" or (getattr(schedule, "action_type", "") == "custom_command" and data.command is not None):
+        if user.get("role") != "admin":
+            raise HTTPException(403, "Linux shell commands can only be updated by Full Administrators.")
 
     updated_data = schedule.model_dump()
     for field, value in data.model_dump(exclude_unset=True).items():
@@ -425,9 +435,15 @@ async def api_delete_schedule(schedule_id: str, _=Depends(require_operator_or_ad
 
 
 @app.post("/api/schedules/{schedule_id}/run/{action}")
-async def api_run_now(schedule_id: str, action: str, _=Depends(require_operator_or_admin)):
+async def api_run_now(schedule_id: str, action: str, user: Dict[str, Any] = Depends(require_operator_or_admin)):
     if action not in ("enable", "disable", "run", "stop", "start"):
         raise HTTPException(400, "Invalid action. Must be enable, disable, run, stop, or start.")
+    schedule = storage.get_schedule(schedule_id)
+    if not schedule:
+        raise HTTPException(404, "Schedule not found")
+    if getattr(schedule, "action_type", "inbound_window") == "custom_command":
+        if user.get("role") != "admin":
+            raise HTTPException(403, "Executing Linux shell commands requires Full Administrator role.")
     await sched._run_action(schedule_id, action, is_sync=False)
     return {"ok": True}
 
@@ -463,43 +479,6 @@ async def api_schedule_stats(schedule_id: str, _=Depends(get_current_user)):
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
-
-
-@app.post("/api/schedules/{schedule_id}/check-port")
-async def api_check_schedule_port(schedule_id: str, _=Depends(get_current_user)):
-    schedule = storage.get_schedule(schedule_id)
-    if not schedule:
-        raise HTTPException(404, "Schedule not found")
-    panel = storage.get_panel(schedule.panel_id)
-    if not panel:
-        raise HTTPException(404, "Target panel not found")
-
-    client = XUIClient(panel.url, panel.token, panel.path_prefix)
-    try:
-        inbound = await client.get_inbound(schedule.inbound_id)
-        port = inbound.get("port")
-        if not port:
-            return {"open": False, "error": "No port specified in inbound"}
-
-        parsed = urllib.parse.urlparse(panel.url)
-        host = parsed.hostname or "127.0.0.1"
-
-        start_time = time.perf_counter()
-        try:
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(host, int(port)),
-                timeout=4.0
-            )
-            elapsed_ms = round((time.perf_counter() - start_time) * 1000.0, 1)
-            writer.close()
-            await writer.wait_closed()
-            return {"open": True, "port": port, "host": host, "latency_ms": elapsed_ms}
-        except asyncio.TimeoutError:
-            return {"open": False, "port": port, "host": host, "error": "Connection timed out (Port filtered or blocked)"}
-        except Exception as conn_err:
-            return {"open": False, "port": port, "host": host, "error": str(conn_err)}
-    except Exception as e:
-        return {"open": False, "error": str(e)}
 
 
 # ─── API: Logs ────────────────────────────────────────────────────────────────

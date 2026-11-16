@@ -685,40 +685,40 @@ function renderSchedules() {
     let inboundCellHtml = '';
     if (actionType === 'inbound_window') {
       inboundCellHtml = `
-        <div class="inbound-title">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          ${taskBadge}
           <span class="inbound-name">${esc(s.inbound_remark || 'Inbound')}</span>
           <span class="inbound-id-tag">#${s.inbound_id}</span>
           <button class="btn-micro" onclick="showInboundStats('${s.id}')" title="${t('btn_traffic_stats')}">📊</button>
-          <button class="btn-micro" onclick="checkSchedulePort('${s.id}')" title="${t('btn_port_check')}">🔍 Port</button>
         </div>
       `;
     } else if (actionType === 'xray_restart') {
       inboundCellHtml = `
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="inbound-name">${esc(s.task_name || 'Xray Core Auto-Restart')}</span>
           ${taskBadge}
+          <span class="inbound-name">${esc(s.task_name || 'Xray Core Auto-Restart')}</span>
         </div>
       `;
     } else if (actionType === 'xray_window') {
       inboundCellHtml = `
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="inbound-name">${esc(s.task_name || 'Xray Maintenance Window')}</span>
           ${taskBadge}
+          <span class="inbound-name">${esc(s.task_name || 'Xray Maintenance Window')}</span>
         </div>
       `;
     } else if (actionType === 'reset_traffic') {
       inboundCellHtml = `
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="inbound-name">${esc(s.task_name || ('Reset Traffic (' + (s.inbound_remark || 'All Inbounds') + ')'))}</span>
           ${taskBadge}
+          <span class="inbound-name">${esc(s.task_name || ('Reset Traffic (' + (s.inbound_remark || 'All Inbounds') + ')'))}</span>
         </div>
       `;
     } else if (actionType === 'custom_command') {
       inboundCellHtml = `
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="inbound-name">${esc(s.task_name || 'Shell Script')}</span>
             ${taskBadge}
+            <span class="inbound-name">${esc(s.task_name || 'Shell Script')}</span>
           </div>
           <code style="font-size:11px;color:#a78bfa;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;width:fit-content;direction:ltr;">${esc((s.command || '').slice(0, 35))}${(s.command && s.command.length > 35) ? '...' : ''}</code>
         </div>
@@ -727,8 +727,8 @@ function renderSchedules() {
       inboundCellHtml = `
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="inbound-name">${esc(s.task_name || 'Custom 3X-UI API')}</span>
             ${taskBadge}
+            <span class="inbound-name">${esc(s.task_name || 'Custom 3X-UI API')}</span>
           </div>
           <code style="font-size:11px;color:#fb7185;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;width:fit-content;direction:ltr;">${esc(s.api_method || 'POST')} ${esc(s.api_endpoint || '/')}</code>
         </div>
@@ -737,8 +737,8 @@ function renderSchedules() {
       inboundCellHtml = `
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="inbound-name">${esc(s.task_name || 'Telegram Reminder')}</span>
             ${taskBadge}
+            <span class="inbound-name">${esc(s.task_name || 'Telegram Reminder')}</span>
           </div>
           <div style="font-size:11.5px;color:var(--text-muted);">${esc((s.message || '').slice(0, 45))}${(s.message && s.message.length > 45) ? '...' : ''}</div>
         </div>
@@ -886,6 +886,9 @@ function getSelectedDaysFromContainer(containerId) {
 }
 
 function showAddSchedule() {
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  const commandOption = isAdmin ? `<option value="custom_command">💻 ${t('task_custom_command')}</option>` : '';
+
   const panelOptions = [
     `<option value="all">${t('panel_all_fleet')}</option>`,
     ...panels.map(p => `<option value="${p.id}">${esc(p.name)}</option>`)
@@ -899,7 +902,7 @@ function showAddSchedule() {
         <option value="xray_restart">🔄 ${t('task_xray_restart')}</option>
         <option value="xray_window">🛑 ${t('task_xray_window')}</option>
         <option value="reset_traffic">📊 ${t('task_reset_traffic')}</option>
-        <option value="custom_command">💻 ${t('task_custom_command')}</option>
+        ${commandOption}
         <option value="custom_api">🌐 ${t('task_custom_api')}</option>
         <option value="telegram_alert">✈️ ${t('task_telegram_alert')}</option>
       </select>
@@ -1224,6 +1227,9 @@ function showEditSchedule(scheduleId) {
   if (!s) return;
 
   const actionType = s.action_type || 'inbound_window';
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  const commandOption = (isAdmin || actionType === 'custom_command') ? `<option value="custom_command" ${actionType === 'custom_command' ? 'selected' : ''}>💻 ${t('task_custom_command')}</option>` : '';
+
   const panelOptions = [
     `<option value="all" ${s.panel_id === 'all' ? 'selected' : ''}>${t('panel_all_fleet')}</option>`,
     ...panels.map(p => `
@@ -1239,7 +1245,7 @@ function showEditSchedule(scheduleId) {
         <option value="xray_restart" ${actionType === 'xray_restart' ? 'selected' : ''}>🔄 ${t('task_xray_restart')}</option>
         <option value="xray_window" ${actionType === 'xray_window' ? 'selected' : ''}>🛑 ${t('task_xray_window')}</option>
         <option value="reset_traffic" ${actionType === 'reset_traffic' ? 'selected' : ''}>📊 ${t('task_reset_traffic')}</option>
-        <option value="custom_command" ${actionType === 'custom_command' ? 'selected' : ''}>💻 ${t('task_custom_command')}</option>
+        ${commandOption}
         <option value="custom_api" ${actionType === 'custom_api' ? 'selected' : ''}>🌐 ${t('task_custom_api')}</option>
         <option value="telegram_alert" ${actionType === 'telegram_alert' ? 'selected' : ''}>✈️ ${t('task_telegram_alert')}</option>
       </select>
@@ -1831,9 +1837,8 @@ async function showInboundStats(scheduleId) {
           </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:6px;">
-          <button class="btn btn-ghost" style="flex:1;" onclick="checkSchedulePort('${scheduleId}')">🔍 Test Port :${stats.port}</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="closeModal()">Close</button>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button class="btn btn-primary" style="width:100%;" onclick="closeModal()">Close</button>
         </div>
       </div>
     `);
@@ -1843,20 +1848,6 @@ async function showInboundStats(scheduleId) {
         ⚠️ Failed to load stats: ${esc(e.message)}
       </div>
     `);
-  }
-}
-
-async function checkSchedulePort(scheduleId) {
-  try {
-    toast(`Testing TCP port reachability...`, 'info');
-    const res = await api('POST', `/api/schedules/${scheduleId}/check-port`);
-    if (res.open) {
-      toast(`Port :${res.port} on ${res.host} is OPEN & Reachable! (${res.latency_ms}ms)`, 'ok');
-    } else {
-      toast(`Port :${res.port} is UNREACHABLE or Filtered: ${res.error || 'Blocked'}`, 'err');
-    }
-  } catch (e) {
-    toast(`Port check failed: ${e.message}`, 'err');
   }
 }
 
